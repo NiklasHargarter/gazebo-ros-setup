@@ -30,7 +30,7 @@ Your project directory should look exactly like this:
 Before running the container for the very first time, you must create the history file and workspace directory on your host. If you skip this, Docker will accidentally create .zsh_history as a directory instead of a file.
 
 Run this in the repo folder:
-```Bash
+```bash
 mkdir -p workspace
 touch .zsh_history
 ```
@@ -39,7 +39,7 @@ touch .zsh_history
 ### 1. Start the Environment
 
 To spin up the container in the background, run:
-```Bash
+```bash
 # Allow local Docker containers to display GUIs on your screen
 xhost +local:docker
 
@@ -50,7 +50,7 @@ docker compose up -d --build
 ### 2. Open a Terminal
 
 To start developing, drop into your pre-configured zsh shell:
-```Bash
+```bash
 docker compose exec ros-gazebo zsh
 ```
 
@@ -58,18 +58,18 @@ docker compose exec ros-gazebo zsh
 
 GUI Mode:
 Because the environment natively forwards X11, you can launch Gazebo normally and it will appear on your host monitor:
-```Bash
+```bash
 gz sim
 ```
 
 Headless Mode:
 If you need to run camera sensors in headless mode (e.g., on a cloud server or without a monitor), temporarily wipe the $DISPLAY variable inline. This forces Gazebo to use the GPU directly via EGL instead of looking for a windowing system:
-```Bash
+```bash
 DISPLAY= gz sim -v 4 -s -r --headless-rendering sensors_demo.sdf
 ```
 
 ### 4. Shutting Down 
 
-```Bash
+```bash
 docker compose down
 ```
