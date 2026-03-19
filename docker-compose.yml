@@ -1,0 +1,19 @@
+services:
+  ros-gazebo:
+    # Switch from 'image:' to building your local Dockerfile
+    build: .
+    # Use zsh as the primary command
+    command: /bin/zsh
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      # Map a local folder into the container for easy code editing
+      - ./workspace:/workspace
+      # Save your zsh history to your host machine
+      - ./.zsh_history:/root/.zhistory
+    devices:
+      - nvidia.com/gpu=all
+    network_mode: "host"
