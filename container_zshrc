@@ -1,5 +1,5 @@
 # --- ROS 2 Environment ---
-source /opt/ros/kilted/setup.zsh
+source /opt/ros/${ROS_DISTRO}/setup.zsh
 
 # --- Zsh History Settings ---
 export HISTFILE=/root/.zsh_history

@@ -2,9 +2,9 @@
 title: Home
 layout: home
 ---
-# ROS 2 Kilted & Gazebo Docker Environment
+# ROS 2 & Gazebo Docker Environment
 
-This project provides a fully containerized, GPU-accelerated development environment for ROS 2 (Kilted) and Gazebo. It features native NVIDIA GPU injection, X11 forwarding for GUI applications, headless rendering support (EGL), and a persistent `zsh` environment that automatically sources ROS.
+This project provides a fully containerized, GPU-accelerated development environment for ROS 2 (supporting Humble, Jazzy, etc.) and Gazebo. It features native NVIDIA GPU injection, X11 forwarding for GUI applications, headless rendering support (EGL), and a persistent `zsh` environment that automatically sources the correct ROS version.
 
 ## Prerequisites
 
@@ -43,7 +43,29 @@ To spin up the container in the background, run:
 # Allow local Docker containers to display GUIs on your screen
 xhost +local:docker
 
-# Build and start the container
+# Build and start the container (defaults to Humble)
+docker compose up -d --build
+
+# OR build for a specific version (e.g., Jazzy)
+ROS_DISTRO=jazzy docker compose up -d --build
+```
+
+### Switching ROS Versions
+
+By default, the environment uses **ROS 2 Humble**. You can easily switch to other versions like **Jazzy** by setting the `ROS_DISTRO` environment variable:
+
+**Option A: Using an environment variable**
+```bash
+ROS_DISTRO=jazzy docker compose up -d --build
+```
+
+**Option B: Using a `.env` file**
+Create a `.env` file in the root directory:
+```env
+ROS_DISTRO=jazzy
+```
+Then run:
+```bash
 docker compose up -d --build
 ```
 

@@ -1,4 +1,4 @@
-# Contains details for easily replicatable gazebo-ros2 setup.
+# Contains details for easily replicatable gazebo-ros2 setup (Humble, Jazzy, etc.).
 
 ## just-the-docs
 all documentation is done using [Just the Docs]: https://just-the-docs.github.io/just-the-docs/
