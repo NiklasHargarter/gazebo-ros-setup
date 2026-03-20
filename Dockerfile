@@ -1,5 +1,5 @@
 # 1. Global Scope: Define the default once
-ARG ROS_DISTRO=humble
+ARG ROS_DISTRO=jazzy
 
 FROM osrf/ros:${ROS_DISTRO}-desktop-full
 
