@@ -27,13 +27,11 @@ The project is organized into three conceptual layers. Each layer is a clear bou
 
 | Layer | Responsibility | Deliverables |
 |---|---|---|
-| **Physical Layer** | The robot's "body" — one team owns this | URDF/Xacro, mesh files, controller configurations |
-| **Simulation Layer** | The shared world and its public interface — integration lead owns this | SDF world, sensor plugins, bridge configuration, integrated launch file |
-| **Intelligence Layer** | Everything that reasons, plans, or acts — multiple independent parties | ROS 2 nodes for any combination of planning, control, inference, or task logic |
+| **Physical Layer** (TZ2) | The robot's "body" | URDF/Xacro, mesh files, controller configurations |
+| **Simulation Layer** (TZ6) | The shared world and its public interface | SDF world, sensor plugins, bridge configuration, integrated launch file |
+| **Intelligence Layer** (TZ3, TZ4, TZ5) | Everything that reasons, plans, or acts | ROS 2 nodes for visual reasoning, human-aware AI, and decision making |
 
-The Intelligence Layer has multiple independent parties — in this project: visual reasoning and social navigation, human-aware AI, AI for decision making, and robot training in virtual environments. Each works independently against the same shared interface. They do not need to know about each other's implementation, only the agreed topics.
-
-Note that TZ6 (robot training in virtual environments) has a particularly close relationship with the simulation layer — training workflows may require direct collaboration with the integration lead on world configuration and scenario scripting.
+The Intelligence Layer has multiple independent parties. Each works against the same shared world and interface contract without needing to know about each other's implementation.
 
 ---
 
