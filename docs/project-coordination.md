@@ -27,7 +27,7 @@ For the technical architecture behind these decisions, see [Integration Architec
 
 ## Open Questions
 
-Unresolved as of project start (2026-03-25). Raise in team meetings.
+Unresolved as of TZ6 joining the project (2026-03-25). Raise in team meetings.
 
 ### Interface contract
 - [ ] Who creates the first version of the shared interfaces package, and when?
