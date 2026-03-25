@@ -17,7 +17,7 @@ services:
       # Map a local folder into the container for easy code editing
       - ./workspace:/workspace
       # Save your zsh history to your host machine
-      - ./.zsh_history:/root/.zhistory
+      - ./.zsh_history:/root/.zsh_history
     devices:
       - nvidia.com/gpu=all
     network_mode: "host"
