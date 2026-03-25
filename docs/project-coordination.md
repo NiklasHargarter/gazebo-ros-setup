@@ -1,85 +1,92 @@
 ---
-title: Project Coordination & Open Questions
+title: Project Coordination
 layout: default
-nav_order: 2
+nav_order: 3
 ---
 
-# Project Coordination & Open Questions
+# Project Coordination
 
-This document captures the current state of coordination decisions, known gaps, and questions to resolve in team meetings. It is a living document — update it as answers arrive.
+This is the living project state document. It tracks what has been decided, what is still unknown, and who owns what. Update it as answers arrive from team meetings.
+
+For the technical architecture behind these decisions, see [Integration Architecture & Team Workflow](ros2-gazebo-integration).
 
 ---
 
-## What is decided
+## Decisions
 
 | Decision | Detail |
 |---|---|
-| **Repo purpose** | Reproducible base environment + shared world. Teams bring their own code. |
+| **Repo purpose** | Reproducible base environment + shared world. Teams bring their own code in separate repos. |
 | **World ownership** | Shared Gazebo world lives in this repo, maintained by the integration lead. |
-| **Integration responsibility** | One person (integration lead) is responsible for ensuring all teams' work is compatible. |
-| **Base philosophy** | Interface-first via ROS 2 topics/services/actions. No team depends directly on Gazebo internals. |
-| **Team layers** | Three layers: Physical (robot/URDF), Environment (world/sensors), Intelligence (AI/control). |
-| **Team code structure** | Each team maintains their own separate work. This repo provides the base they run against. |
-| **Starting point** | Teams can run in isolation against the shared world without needing other teams' code. |
+| **Integration responsibility** | Integration lead is responsible for the shared world, the bridge config, the integrated launch file, and cross-team compatibility. |
+| **Interface approach** | A shared ROS 2 interfaces package will be the contract between teams — code, not a document. See the architecture doc for details. |
+| **Team structure** | Two fixed parties with clear ownership: TZ2 (physical layer) and simulation/integration lead (this repo). TZ3, TZ4, TZ5, and TZ6 each contribute to the intelligence layer independently. |
+| **Team isolation** | Any party can work against the shared world independently without needing other parties' code. |
 
 ---
 
-## Open questions — find out in meetings
+## Open Questions
 
-These are unresolved as of project start. Each needs an answer before the relevant team begins building.
+Unresolved as of project start (2026-03-25). Raise in team meetings.
 
 ### Interface contract
-- [ ] **Who defines the ROS 2 topic names, message types, and QoS settings?** The integration lead is the natural owner, but this must be agreed before teams write subscribers or publishers.
-- [ ] **Does a shared `interfaces` ROS 2 package need to be created?** Or is a documented spec (YAML/Markdown) sufficient for now?
-- [ ] **What is the change process for the interface?** If the robot team renames a joint (breaking change), what is the review/notification process?
+- [ ] Who creates the first version of the shared interfaces package, and when?
+- [ ] What is the change process for the interface? If the robot team renames a joint, what is the notification and migration process?
 
-### Team state & current work
-- [ ] **What stage is each team at?** Has anyone already written nodes with topic names that would need to be reconciled?
-- [ ] **What does the robot team's URDF currently look like?** Joint names and link names will define topic names.
-- [ ] **What sensors are defined?** Camera, IMU, force-torque — each becomes a bridge topic.
+### Team state
+- [ ] Who are all the parties involved on the intelligence side, and what is each working on?
+- [ ] Has anyone already written nodes with topic names that would need to be reconciled?
+- [ ] What sensors does the robot have? Each sensor becomes a bridge topic and must be in the interface contract.
 
 ### Workspace & code sharing
-- [ ] **How do teams share their ROS packages for others to use?** Options: Git submodules in this repo, separate repos cloned into `workspace/`, a shared network mount, or a ROS package registry.
-- [ ] **Should a `workspace/` directory convention be defined?** e.g., `workspace/robot/`, `workspace/tasks/`, `workspace/control/` so the launch file can find packages predictably.
-- [ ] **When someone wants to run another team's code alongside theirs, what is the process?**
+- [ ] How do teams share their ROS packages for others to use? Options: Git submodules, separate repos cloned into `workspace/`, shared network mount.
+- [ ] Where do team launch files live if teams have separate repos? The integration lead needs a stable path to call them.
 
 ### Hardware & GPU
-- [ ] **Does every researcher have an NVIDIA GPU?** The current Docker setup requires `nvidia.com/gpu=all` and the nvidia-container-toolkit. Anyone on a Mac or CPU-only machine cannot run the current setup.
-- [ ] **Is there a shared server for headless/CI testing?** The architecture supports this (headless mode is documented) but no server is confirmed.
-- [ ] **Is GPU required for the shared world, or only for AI inference?** Affects whether the base environment can run on non-NVIDIA machines.
+- [ ] Does every researcher have an NVIDIA GPU? The current Docker setup requires the NVIDIA Container Toolkit. Anyone on a Mac or CPU-only machine cannot run the current setup.
+- [ ] Is there a shared server for headless testing?
 
-### Breaking changes & versioning
-- [ ] **What happens when the robot URDF changes in a way that breaks other teams?** Need a process: versioned tags, a PR review requirement, a migration guide, or something else.
-- [ ] **Should the shared world be versioned separately from the Docker environment?** Or is a single `main` branch acceptable while the project is early-stage?
+### Breaking changes
+- [ ] What happens when a change to the robot URDF or the interfaces package breaks other teams? A minimal process — even just "open an issue first" — prevents silent breakage.
 
 ---
 
-## Architecture intent (current understanding)
+## System Components — Ownership & Status
 
-```
-this repo
-├── Dockerfile + docker-compose   ← base environment (all teams use this)
-├── world/                        ← shared Gazebo world SDF (integration lead owns)
-│   ├── world.sdf
-│   └── launch/                   ← integrated launch file
-└── docs/                         ← documentation and interface specs
+Everything the full system needs to run. Update as the project takes shape.
 
-team repos (separate, mounted into workspace/)
-├── robot-team/                   ← URDF, Xacro, ros2_control config
-├── tasks-team/                   ← task definitions, scenario scripts
-└── control-team/                 ← AI/VLA nodes, control models
-```
+| Component | Description | Owner | Status |
+|---|---|---|---|
+| **Base Docker environment** | Shared container with ROS 2 and Gazebo | Integration lead | done |
+| **Shared world (SDF)** | The Gazebo environment all teams run against | Integration lead | in progress |
+| **Bridge configuration** | Maps simulation topics to ROS 2 — the world's public interface | Integration lead | missing |
+| **Shared interfaces package** | All cross-team message, service, and action types | ? | missing |
+| **Integrated launch file** | Assembles all team components into one running system | Integration lead | missing |
+| **ROS 2 bag (reference session)** | Recorded interface topics for offline development | Integration lead | missing |
+| **Robot description (URDF/Xacro)** | Full robot model with geometry, physics, and joint definitions | TZ2 | ? |
+| **Controller configuration** | Defines how joints are controlled at runtime | TZ2 | ? |
+| **TZ2 launch file** | Launches the robot description and controllers | TZ2 | ? |
+| **TZ3 nodes** | Visual reasoning and social navigation | TZ3 | ? |
+| **TZ3 launch file** | Launches TZ3 nodes | TZ3 | ? |
+| **TZ4 nodes** | Human-aware AI | TZ4 | ? |
+| **TZ4 launch file** | Launches TZ4 nodes | TZ4 | ? |
+| **TZ5 nodes** | AI for decision making | TZ5 | ? |
+| **TZ5 launch file** | Launches TZ5 nodes | TZ5 | ? |
+| **TZ6 nodes** | Robot training in virtual environments | TZ6 | ? |
+| **TZ6 launch file** | Launches TZ6 nodes | TZ6 | ? |
 
-The bridge config inside `launch/` will be the **authoritative list of topics** that the world exposes. All teams must read this before writing their first subscriber or publisher.
+`?` = unknown, to be established in team meetings.
 
 ---
 
-## Meeting agenda items (derived from open questions)
+## Meeting Agenda
 
-Priority order for first team meeting:
+Priority order for the first full team meeting:
 
-1. **Interface contract** — agree on who owns it and when the first version will exist. Block all subscriber/publisher development until this is done.
-2. **Current state of each team** — has anyone already written nodes? What topic names did they use?
-3. **GPU availability** — a quick show of hands avoids a nasty surprise on day one.
-4. **Workspace convention** — agree on the directory layout so the launch file can be written once.
-5. **Breaking change process** — even a simple rule ("open an issue before renaming anything") prevents integration pain later.
+1. **Interface contract** — who creates the first version of the interfaces package, and when. Block all cross-team subscriber/publisher development until this exists.
+2. **Current state per team** — has TZ2, TZ3, TZ4, TZ5, or TZ6 already written nodes? What topic names did they use?
+3. **Sensor inventory** — what sensors does the robot have? This determines the bridge config and the interface contract.
+4. **TZ6 coordination** — robot training in virtual environments overlaps directly with the simulation layer. Align early on what world configurations and scenario scripting TZ6 needs.
+5. **GPU availability** — a quick show of hands avoids a surprise on day one.
+6. **Launch file convention** — where do team launch files live if code is in separate repos?
+7. **Breaking change process** — agree on a minimal rule before anyone starts depending on another team's interface.
