@@ -1,5 +1,6 @@
 ---
 title: Project Coordination & Open Questions
+layout: default
 nav_order: 2
 ---
 
