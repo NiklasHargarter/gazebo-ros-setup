@@ -1,6 +1,11 @@
 # --- ROS 2 Environment ---
 source /opt/ros/${ROS_DISTRO}/setup.zsh
 
+# --- Workspace Overlay (auto-source if built) ---
+if [ -f /workspace/install/setup.zsh ]; then
+  source /workspace/install/setup.zsh
+fi
+
 # --- Zsh History Settings ---
 export HISTFILE=/root/.zsh_history
 export HISTSIZE=10000

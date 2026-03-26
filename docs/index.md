@@ -39,13 +39,14 @@ Your project directory should look exactly like this:
 
 ## Initial Setup
 
-Before running the container for the very first time, create the history file and workspace directory on your host. If you skip this, Docker will accidentally create `.zsh_history` as a directory instead of a file.
+Before running the container for the very first time, create the history file, workspace directory, and `.env` file on your host. If you skip the `.zsh_history` step, Docker will accidentally create it as a directory instead of a file.
 
 Run this in the repo folder:
 
 ```bash
-mkdir -p workspace
+mkdir -p workspace/src
 touch .zsh_history
+echo "ROS_DISTRO=jazzy" > .env
 ```
 
 ---
@@ -95,7 +96,16 @@ docker compose up -d --build
 docker compose exec ros-gazebo zsh
 ```
 
-### 4. Running Gazebo
+### 4. Verify the Environment
+
+Inside the container, confirm ROS 2 is active:
+
+```bash
+ros2 node list     # should return nothing (no nodes running yet)
+ros2 topic list    # should list /parameter_events and /rosout
+```
+
+### 5. Running Gazebo
 
 **GUI mode** — X11 forwarding is handled automatically:
 
@@ -115,7 +125,7 @@ Humble:
 DISPLAY= ign gazebo -v 4 -s -r --headless-rendering sensors_demo.sdf
 ```
 
-### 5. Shut Down
+### 6. Shut Down
 
 ```bash
 docker compose down
@@ -129,3 +139,30 @@ docker compose down
 |---|---|---|
 | Jazzy | Harmonic | `gz sim` |
 | Humble | Fortress | `ign gazebo` |
+
+---
+
+## No NVIDIA GPU
+
+Remove the `devices` block from `docker-compose.yml` and do not run headless GPU rendering. GUI mode via X11 will still work using software rendering (Mesa), but performance will be limited.
+
+---
+
+## Common Commands
+
+```bash
+# Start without rebuilding (image already exists)
+docker compose up -d
+
+# Force a full rebuild
+docker compose up -d --build --no-cache
+
+# Open a second terminal in the same running container
+docker compose exec ros-gazebo zsh
+
+# Build your workspace packages inside the container
+colcon build --symlink-install
+
+# After building, source the overlay (done automatically on next shell open)
+source /workspace/install/setup.zsh
+```
