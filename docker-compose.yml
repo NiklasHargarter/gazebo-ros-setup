@@ -12,6 +12,8 @@ services:
     tty: true
     environment:
       - DISPLAY=${DISPLAY}
+      - GZ_PARTITION=ros2_sim
+      - GZ_IP=${WORKSTATION_IP}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       # Map a local folder into the container for easy code editing
