@@ -1,3 +1,9 @@
+---
+title: Desktop Full Image Contents
+layout: default
+nav_order: 4
+---
+
 # ROS 2 Jazzy `desktop-full` — Package Contents
 
 This document details what is included in the `osrf/ros:jazzy-desktop-full` Docker image, broken down by metapackage layer.
