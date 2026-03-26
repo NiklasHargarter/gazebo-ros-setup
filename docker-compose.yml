@@ -4,8 +4,8 @@ services:
     build:
       context: .
       args:
-        - ROS_DISTRO=${ROS_DISTRO:-jazzy}
-    container_name: ros-gazebo-${ROS_DISTRO:-jazzy}
+        - ROS_DISTRO=${ROS_DISTRO:-humble}
+    container_name: ros-gazebo-${ROS_DISTRO:-humble}
     # Use zsh as the primary command
     command: /bin/zsh
     stdin_open: true

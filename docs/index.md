@@ -30,7 +30,7 @@ Your project directory should look exactly like this:
 ├── docker-compose.yml   # Container orchestration config
 ├── Dockerfile           # Builds the custom zsh/ROS image
 ├── container_zshrc      # Custom zsh configuration
-├── .env                 # Sets ROS_DISTRO (e.g. ROS_DISTRO=jazzy)
+├── .env                 # Sets ROS_DISTRO (e.g. ROS_DISTRO=humble)
 ├── workspace/           # Your mapped local code folder
 └── .zsh_history         # Stores your terminal history
 ```
@@ -46,7 +46,7 @@ Run this in the repo folder:
 ```bash
 mkdir -p workspace/src
 touch .zsh_history
-echo "ROS_DISTRO=jazzy" > .env
+echo "ROS_DISTRO=humble" > .env
 ```
 
 ---
@@ -59,16 +59,16 @@ echo "ROS_DISTRO=jazzy" > .env
 # Allow local Docker containers to display GUIs on your screen
 xhost +local:docker
 
-# Build and start the container (defaults to Jazzy)
+# Build and start the container (defaults to Humble — used by the robotics team)
 docker compose up -d --build
 
 # OR specify a ROS version explicitly
-ROS_DISTRO=jazzy docker compose up -d --build
+ROS_DISTRO=humble docker compose up -d --build
 ```
 
 ### 2. Switching ROS Versions
 
-The environment defaults to **ROS 2 Jazzy**. To use a different version:
+The environment defaults to **ROS 2 Humble** (with Gazebo Fortress) — this is the version used by the robotics team. To use a different version:
 
 **Option A — environment variable:**
 
@@ -81,7 +81,7 @@ ROS_DISTRO=humble docker compose up -d --build
 Create a `.env` file in the root directory:
 
 ```env
-ROS_DISTRO=jazzy
+ROS_DISTRO=humble
 ```
 
 Then run:
@@ -135,10 +135,10 @@ docker compose down
 
 ## Notes
 
-| Distro | Gazebo version | Launch command |
-|---|---|---|
-| Jazzy | Harmonic | `gz sim` |
-| Humble | Fortress | `ign gazebo` |
+| Distro | Gazebo version | Launch command | |
+|---|---|---|---|
+| Humble | Fortress | `ign gazebo` | **default — robotics team** |
+| Jazzy | Harmonic | `gz sim` | |
 
 ---
 

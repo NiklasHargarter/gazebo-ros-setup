@@ -4,30 +4,32 @@ layout: default
 nav_order: 4
 ---
 
-# ROS 2 Jazzy `desktop-full` — Package Contents
+# ROS 2 Humble `desktop-full` — Package Contents
 
-This document details what is included in the `osrf/ros:jazzy-desktop-full` Docker image, broken down by metapackage layer.
+> **This is the version used by the robotics team** (ROS 2 Humble + Gazebo Fortress).
+
+This document details what is included in the `osrf/ros:humble-desktop-full` Docker image, broken down by metapackage layer.
 
 ## Layer hierarchy
 
 ```
-ros-jazzy-desktop-full
-├── ros-jazzy-desktop
-│   └── ros-jazzy-ros-base
-│       └── ros-jazzy-ros-core
-├── ros-jazzy-perception
-├── ros-jazzy-simulation
-└── ros-jazzy-ros-gz-sim-demos
+ros-humble-desktop-full
+├── ros-humble-desktop
+│   └── ros-humble-ros-base
+│       └── ros-humble-ros-core
+├── ros-humble-perception
+├── ros-humble-simulation
+└── ros-humble-ros-ign-gazebo-demos
 ```
 
 ---
 
 ## `ros-core`
 
-**Dockerfile:** `osrf/docker_images` → `ros/jazzy/ubuntu/noble/ros-core/Dockerfile`
+**Dockerfile:** `osrf/docker_images` → `ros/humble/ubuntu/jammy/ros-core/Dockerfile`
 **Package definition:** `ros2/variants` → `ros_core/package.xml`
 
-Base image: `ubuntu:noble`. Installs `ros-jazzy-ros-core` via apt.
+Base image: `ubuntu:jammy`. Installs `ros-humble-ros-core` via apt.
 
 - **Build system:** `ament_cmake`, `ament_cmake_auto`, `ament_cmake_ros`, `ament_cmake_gtest`, `ament_cmake_gmock`, `ament_cmake_pytest`, `ament_index_cpp`, `ament_index_python`, `ament_lint_auto`, `ament_lint_common`
 - **Client libraries:** `rclcpp`, `rclcpp_action`, `rclcpp_lifecycle`, `rclpy`, `rcl_lifecycle`
@@ -42,10 +44,10 @@ Base image: `ubuntu:noble`. Installs `ros-jazzy-ros-core` via apt.
 
 ## `ros-base`
 
-**Dockerfile:** `osrf/docker_images` → `ros/jazzy/ubuntu/noble/ros-base/Dockerfile`
+**Dockerfile:** `osrf/docker_images` → `ros/humble/ubuntu/jammy/ros-base/Dockerfile`
 **Package definition:** `ros2/variants` → `ros_base/package.xml`
 
-Base image: `ros:jazzy-ros-core-noble`. Adds developer tooling via apt (not in `package.xml`) then installs `ros-jazzy-ros-base`.
+Base image: `ros:humble-ros-core-jammy`. Adds developer tooling via apt (not in `package.xml`) then installs `ros-humble-ros-base`.
 
 **Extra tooling installed by the Dockerfile (not in package.xml):**
 - `build-essential`, `git`
@@ -64,7 +66,7 @@ Base image: `ros:jazzy-ros-core-noble`. Adds developer tooling via apt (not in `
 
 ## `desktop`
 
-**Dockerfile:** `osrf/docker_images` → `ros/jazzy/ubuntu/noble/desktop/Dockerfile`
+**Dockerfile:** `osrf/docker_images` → `ros/humble/ubuntu/jammy/desktop/Dockerfile`
 **Package definition:** `ros2/variants` → `desktop/package.xml`
 
 Adds on top of `ros-base`:
@@ -101,19 +103,19 @@ Adds on top of `ros-base`:
 
 Adds on top of `ros-base`:
 
-- **`ros_gz_bridge`** — bidirectional ROS 2 ↔ Gazebo topic/service bridge
-- **`ros_gz_sim`** — launch integration for Gazebo from ROS 2
-- **`ros_gz_image`** — image transport between ROS 2 and Gazebo
-- **`ros_gz_interfaces`** — shared custom message/service types
-- All of the above vendor **Gazebo Harmonic** (`gz-sim` 8.x) via `gz_sim_vendor`
+- **`ros_ign_bridge`** — bidirectional ROS 2 ↔ Gazebo topic/service bridge
+- **`ros_ign_gazebo`** — launch integration for Gazebo Fortress from ROS 2
+- **`ros_ign_image`** — image transport between ROS 2 and Gazebo
+- **`ros_ign_interfaces`** — shared custom message/service types
+- All of the above vendor **Gazebo Fortress** (`ign-gazebo` 6.x)
 
 ---
 
-## `ros_gz_sim_demos`
+## `ros_ign_gazebo_demos`
 
 Added directly by `desktop_full/package.xml` (not via a named variant layer).
 
-- Example launch files and worlds demonstrating `ros_gz_sim` integration
+- Example launch files and worlds demonstrating `ros_ign_gazebo` integration
 
 ---
 
@@ -123,9 +125,9 @@ These are commonly needed but must be installed separately:
 
 | Package | Install |
 |---|---|
-| Navigation stack | `ros-jazzy-navigation2` |
-| MoveIt2 | `ros-jazzy-moveit` |
-| SLAM Toolbox | `ros-jazzy-slam-toolbox` |
+| Navigation stack | `ros-humble-navigation2` |
+| MoveIt2 | `ros-humble-moveit` |
+| SLAM Toolbox | `ros-humble-slam-toolbox` |
 | Hardware drivers (cameras, lidars) | vendor-specific packages |
 
 ---
@@ -134,8 +136,8 @@ These are commonly needed but must be installed separately:
 
 | Source | URL | What it contains |
 |---|---|---|
-| OSRF Docker image definitions | `github.com/osrf/docker_images` → `ros/jazzy/ubuntu/noble/*/Dockerfile` | Exact apt packages installed per layer |
-| ROS 2 variant metapackage definitions | `github.com/ros2/variants` → `jazzy` branch, `*/package.xml` | Declared exec dependencies per variant |
-| Gazebo vendor package | `github.com/gazebo-release/gz_sim_vendor` → `jazzy` branch | Confirms Gazebo Harmonic (gz-sim 8.x) is the vendored version |
+| OSRF Docker image definitions | `github.com/osrf/docker_images` → `ros/humble/ubuntu/jammy/*/Dockerfile` | Exact apt packages installed per layer |
+| ROS 2 variant metapackage definitions | `github.com/ros2/variants` → `humble` branch, `*/package.xml` | Declared exec dependencies per variant |
+| Gazebo vendor package | `github.com/gazebosim/ros_gz` → `humble` branch | Confirms Gazebo Fortress (ign-gazebo 6.x) is the vendored version |
 | Docker Hub image tags | `hub.docker.com/r/osrf/ros` | Compressed image sizes per tag |
 | REP-2001 | `ros.org/reps/rep-2001.html` | Normative definition of what each variant must include |
