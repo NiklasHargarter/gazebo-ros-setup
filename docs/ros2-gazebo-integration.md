@@ -1,7 +1,7 @@
 ---
 title: Integration Architecture & Team Workflow
 layout: default
-nav_order: 2
+nav_order: 3
 ---
 
 # Integration Architecture & Team Workflow
