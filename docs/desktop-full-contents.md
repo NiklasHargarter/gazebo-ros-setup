@@ -1,7 +1,7 @@
 ---
 title: Desktop Full Image Contents
 layout: default
-nav_order: 6
+nav_order: 8
 ---
 
 # ROS 2 Humble `desktop-full` — Package Contents

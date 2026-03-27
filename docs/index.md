@@ -204,5 +204,6 @@ Remove the `devices` block from `docker-compose.yml`. Headless GPU rendering won
 
 ## Next Steps
 
+- **On a Mac?** — follow the [macOS Setup](macos-setup) guide instead of this one
 - **Headless rendering** — run Gazebo on a server with no display, using EGL: [Headless Rendering](headless-rendering)
 - **Writing your own nodes** — add your own ROS 2 nodes to the workspace: [Writing Your Own Nodes](writing-your-own-nodes)

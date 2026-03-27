@@ -1,7 +1,7 @@
 ---
 title: Headless Rendering
 layout: default
-nav_order: 2
+nav_order: 3
 ---
 
 # Headless Rendering
@@ -67,4 +67,4 @@ Fortress's `ign topic` has no frequency flag. Use `-e` to confirm data is flowin
 
 ## Separate server and GUI client
 
-Running the physics server on one machine and the Gazebo GUI on another is documented separately — coming soon.
+Running the physics server on one machine and the Gazebo GUI on another is covered in [Remote GUI Client](server-client).

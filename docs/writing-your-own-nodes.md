@@ -1,7 +1,7 @@
 ---
 title: Writing Your Own Nodes
 layout: default
-nav_order: 4
+nav_order: 6
 ---
 
 # Writing Your Own Nodes
