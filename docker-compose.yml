@@ -12,8 +12,9 @@ services:
     tty: true
     environment:
       - DISPLAY=${DISPLAY}
-      - IGN_PARTITION=ros2_sim
-      - IGN_IP=${WORKSTATION_IP}
+      # Uncomment for server-client setup (see docs/server-client.md)
+      #- IGN_PARTITION=ros2_sim
+      #- IGN_IP=${WORKSTATION_IP}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       # Map a local folder into the container for easy code editing
