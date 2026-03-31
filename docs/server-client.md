@@ -55,38 +55,19 @@ You should see the full list of simulation topics. If the list is empty, the ser
 
 ---
 
-## Client setup — macOS with Docker
+## Client setup
 
-If you haven't run the container on your Mac before, follow the [macOS Setup](macos-setup) guide first to get Docker Desktop and XQuartz working. Come back here once you can open Gazebo locally.
+Make sure you have a working Gazebo Fortress install on the client machine. On macOS, see the [macOS Setup](macos-setup) guide. On Linux, the container itself can serve as the client.
 
-Then run the GUI-only container, pointing it at the server:
-
-### Run the GUI client container
+Connect to the server:
 
 ```bash
-docker run --rm -it \
-  -e DISPLAY=host.docker.internal:0 \
-  -e IGN_PARTITION=ros2_sim \
-  -e IGN_IP=<server IP> \
-  osrf/ros:humble-desktop-full \
-  ign gazebo -g
+export IGN_PARTITION=ros2_sim
+export IGN_IP=<server IP>
+ign gazebo -g
 ```
 
-Replace `<server IP>` with the same IP you set in `WORKSTATION_IP` on the server.
-
-What each option does:
-
-| Option | Purpose |
-|---|---|
-| `DISPLAY=host.docker.internal:0` | Routes GUI output to XQuartz on your Mac — `host.docker.internal` is a DNS name Docker provides that always resolves to the Mac host from inside a container, and `:0` is XQuartz's display number |
-| `IGN_PARTITION=ros2_sim` | Must match the server's partition name exactly |
-| `IGN_IP=<server IP>` | Tells Ignition transport where the server is |
-| `ign gazebo -g` | Starts only the GUI, no physics |
-
-{: .note }
-There is no need to mount `/tmp/.X11-unix` on macOS. That pattern works on Linux (where the X11 socket is directly accessible), but on macOS Docker runs in a Linux VM and the Mac's socket is not reachable from inside it. XQuartz communicates over TCP instead, which is what `DISPLAY=host.docker.internal:0` uses.
-
-The Gazebo GUI window should open on your Mac and connect to the running simulation. You will see the same world the server is simulating.
+Replace `<server IP>` with the same IP you set in `WORKSTATION_IP` on the server. The Gazebo GUI window should open and connect to the running simulation.
 
 ---
 
@@ -95,7 +76,6 @@ The Gazebo GUI window should open on your Mac and connect to the running simulat
 On the **client**, once the GUI is open, check that topics are visible:
 
 ```bash
-# In a second terminal on the client container
 ign topic -l
 ```
 

@@ -6,141 +6,54 @@ nav_order: 2
 
 # macOS Setup
 
-This page covers running the Gazebo UI on a Mac using Docker. The goal is the same as the Linux getting-started guide — open Gazebo and see the simulation window — but macOS needs two extra pieces: **Docker Desktop** instead of the Linux Docker engine, and **XQuartz** to display GUI windows from inside the container.
-
-{: .note }
-NVIDIA GPU passthrough is not supported on macOS Docker. Gazebo will run using software rendering (CPU/Mesa), which is fine for viewing and interacting with a simulation but not for headless GPU-accelerated sensor rendering.
+On macOS, use a Linux workstation as the simulation server and connect from your Mac as a native GUI client. See the [Remote GUI Client](server-client) guide.
 
 ---
 
-## 1. Install Docker Desktop
+## Why the container does not work on macOS
 
-[Download Docker Desktop for Mac](https://www.docker.com/products/docker-desktop/) and install it. Open it and wait for the engine to start — the whale icon in the menu bar stops animating when it's ready.
+On Linux, Docker containers share the host's GPU and X11 socket directly. On macOS, Docker runs inside a Linux VM with no GPU access and no path to a working display.
 
-Verify it works:
-```bash
-docker run hello-world
-```
+**No GPU passthrough.** The VM cannot reach the Mac's GPU. Mesa falls back to its software rasterizer (swrast), but swrast requires DRI kernel interfaces that also do not exist in the VM.
 
----
+**XQuartz GLX is broken over the Docker network boundary.** XQuartz is macOS's X11 server. Containers reach it over TCP (`DISPLAY=host.docker.internal:0`), but XQuartz's GLX implementation does not advertise the framebuffer configurations that Mesa and Qt require — `X_GLXCreateNewContext` returns `BadValue` (visual ID `0x0`) and Qt aborts.
 
-## 2. Install and configure XQuartz
-
-On macOS there is no built-in X11 server. XQuartz provides one. Without it, there is no way to display GUI windows from a Docker container on your screen.
-
-```bash
-brew install --cask xquartz
-```
-
-Docker on macOS runs inside a Linux VM, so it cannot reach XQuartz through a Unix socket the way Linux does. You must enable TCP connections:
-
-1. Open **XQuartz**
-2. Go to **XQuartz → Preferences → Security**
-3. Enable **"Allow connections from network clients"**
-4. **Quit and relaunch XQuartz** — the setting only applies after a full restart
-
-Verify XQuartz is now listening on TCP:
-```bash
-lsof -i :6000
-```
-You should see an `X11` entry. If nothing appears, XQuartz is not running or the setting was not saved.
+No Mesa environment variable (`LIBGL_ALWAYS_SOFTWARE`, `LIBGL_ALWAYS_INDIRECT`, etc.) fixes this — the failure is in XQuartz's GLX layer, not in Mesa's driver selection.
 
 ---
 
-## 3. Grant Docker access to XQuartz
+## Native install via Homebrew
 
-Run this in a Mac terminal before starting the container. You need to repeat it each time XQuartz restarts:
+Installing Gazebo Fortress natively uses macOS's own OpenGL stack and works without any workarounds.
 
-```bash
-xhost +localhost
-```
-
----
-
-## 4. Clone the repo and prepare files
+### 1. Install Gazebo Fortress
 
 ```bash
-git clone <repo-url>
-cd gazebo-ros-setup
-mkdir -p workspace/src
-touch .zsh_history
-echo "ROS_DISTRO=humble" > .env
+brew tap osrf/simulation
+brew install ignition-fortress
 ```
 
----
-
-## 5. Remove the GPU devices line
-
-The default `docker-compose.yml` requests an NVIDIA GPU, which does not exist on macOS. Open `docker-compose.yml` and remove or comment out the `devices` block:
-
-```yaml
-# Remove these two lines:
-    devices:
-      - nvidia.com/gpu=all
-```
-
----
-
-## 6. Set the display variable
-
-On Linux the `DISPLAY` variable is set automatically by the OS. On macOS you need to set it to point at XQuartz. Add it to your `.env` file:
+Verify the install:
 
 ```bash
-echo "DISPLAY=host.docker.internal:0" >> .env
+ign gazebo --version
 ```
 
-`host.docker.internal` is a DNS name Docker provides inside containers that always resolves to your Mac. `:0` is XQuartz's display number.
+### 2. Run the GUI client
 
----
-
-## 7. Build and start the container
+With a simulation server already running on your Linux workstation (see [Remote GUI Client](server-client)):
 
 ```bash
-docker compose up -d --build
+export IGN_PARTITION=ros2_sim
+export IGN_IP=<workstation IP>
+ign gazebo -g
 ```
 
----
+The Gazebo window opens on your Mac and connects to the running simulation on the workstation.
 
-## 8. Open a terminal inside the container
+To avoid setting the variables each session, add them to your shell profile:
 
 ```bash
-docker compose exec ros-gazebo zsh
+echo 'export IGN_PARTITION=ros2_sim' >> ~/.zshrc
+echo 'export IGN_IP=<workstation IP>' >> ~/.zshrc
 ```
-
----
-
-## 9. Launch Gazebo
-
-### Empty world — confirm the GUI opens
-
-```bash
-ign gazebo
-```
-
-A Gazebo window should open on your Mac desktop showing an empty world with a grid floor. This confirms Docker, XQuartz, and display forwarding are all working correctly.
-
-### Sensor demo world — confirm simulation produces data
-
-```bash
-ign gazebo sensors_demo.sdf
-```
-
-The window opens with a world containing sensors. Open a second terminal in the container to verify topics are publishing:
-
-```bash
-ign topic -l
-ign topic -e --topic /thermal_camera
-```
-
-If you see a stream of data, **the setup is complete.**
-
----
-
-## Troubleshooting
-
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `docker compose up` fails with device error | `devices` block still in docker-compose.yml | Remove the `nvidia.com/gpu=all` lines |
-| Gazebo opens but no window appears on screen | XQuartz not running or not configured | Check `lsof -i :6000`; re-enable network clients in XQuartz preferences |
-| `cannot connect to X server` error | `xhost +localhost` not run | Run `xhost +localhost` in a Mac terminal, then retry |
-| Window appears but is blank or crashes | Software rendering fallback not working | Try `export LIBGL_ALWAYS_SOFTWARE=1` inside the container before launching Gazebo |
