@@ -27,10 +27,13 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set lowercase repo name
+        run: echo "REPO_LOWER=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           build-args: ROS_DISTRO=${{ matrix.ros_distro }}
-          tags: ghcr.io/${{ github.repository }}:${{ matrix.ros_distro }}
+          tags: ghcr.io/${{ env.REPO_LOWER }}:${{ matrix.ros_distro }}
