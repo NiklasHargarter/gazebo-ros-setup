@@ -57,11 +57,12 @@ Then create the three files Docker expects to find before the first run:
 ```bash
 mkdir -p workspace/src   # your code goes here later
 touch .zsh_history        # shell history file — must exist as a file, not a folder
+chmod 666 .zsh_history    # container runs as root (different UID), so it needs write access
 echo "ROS_DISTRO=humble" > .env   # tells Docker which ROS version to use
 ```
 
 {: .note }
-If you skip `touch .zsh_history`, Docker will create a *directory* called `.zsh_history` instead of a file, which breaks the volume mount. The touch command creates an empty file with the right name.
+If you skip `touch .zsh_history`, Docker will create a *directory* called `.zsh_history` instead of a file, which breaks the volume mount. The `chmod 666` is needed because the container runs as root (a different user than your host account), so without it zsh will error on exit: `can't rename .zsh_history.new to $HISTFILE`.
 
 After this step your directory looks like:
 
