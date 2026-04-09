@@ -6,8 +6,8 @@ nav_order: 1
 
 # Getting Started with ROS 2 & Gazebo
 
-> **Distro used in this guide:** ROS 2 Humble + Gazebo Fortress — the robotics team default.
-> If you need Jazzy + Harmonic instead, see the reference table at the bottom.
+> **Supported distros:** ROS 2 Humble + Gazebo Fortress and ROS 2 Jazzy + Gazebo Harmonic.
+> Set `ROS_DISTRO=humble` or `ROS_DISTRO=jazzy` in `.env` — commands that differ between versions are labeled throughout this guide.
 
 ---
 
@@ -17,8 +17,8 @@ This repo gives you a ready-to-run robotics development environment without inst
 
 Inside the container you get:
 
-- **ROS 2 Humble** — the Robot Operating System, a framework for writing robot software as a graph of communicating nodes
-- **Gazebo Fortress** — a physics simulator where you can drop in a robot world and have it produce realistic sensor data without any real hardware
+- **ROS 2** (Humble or Jazzy) — the Robot Operating System, a framework for writing robot software as a graph of communicating nodes
+- **Gazebo** (Fortress for Humble, Harmonic for Jazzy) — a physics simulator where you can drop in a robot world and have it produce realistic sensor data without any real hardware
 - GPU passthrough via the NVIDIA Container Toolkit, so the simulator can use your GPU for rendering
 - X11 forwarding, so graphical windows (like the Gazebo UI) appear on your desktop even though they're running inside the container
 
@@ -58,7 +58,7 @@ Then create the three files Docker expects to find before the first run:
 mkdir -p workspace/src   # your code goes here later
 touch .zsh_history        # shell history file — must exist as a file, not a folder
 chmod 666 .zsh_history    # container runs as root (different UID), so it needs write access
-echo "ROS_DISTRO=humble" > .env   # tells Docker which ROS version to use
+echo "ROS_DISTRO=humble" > .env   # or jazzy — controls which ROS + Gazebo version is used
 ```
 
 {: .note }
@@ -71,7 +71,7 @@ After this step your directory looks like:
 ├── docker-compose.yml   # describes the container: image, mounts, GPU, network
 ├── Dockerfile           # recipe for building the ROS + Gazebo image
 ├── container_zshrc      # shell config that gets copied into the container
-├── .env                 # sets ROS_DISTRO=humble
+├── .env                 # sets ROS_DISTRO (humble or jazzy)
 ├── workspace/           # mounted into the container at /workspace
 └── .zsh_history         # mounted so your history persists between sessions
 ```
@@ -126,22 +126,35 @@ These two topics are created automatically by the ROS 2 middleware as soon as it
 
 ### Empty world — confirm the GUI opens
 
+**Humble (Fortress):**
 ```bash
 ign gazebo
+```
+
+**Jazzy (Harmonic):**
+```bash
+gz sim
 ```
 
 A window should open on your desktop showing an empty Gazebo world with a grid floor and a toolbar. This confirms two things at once: the simulator is working, and X11 forwarding is passing the GUI through to your screen. Close it with Ctrl-C in the terminal when you're done.
 
 ### Sensor demo world — confirm simulation produces data
 
+**Humble (Fortress):**
 ```bash
 ign gazebo sensors_demo.sdf
+```
+
+**Jazzy (Harmonic):**
+```bash
+gz sim sensors_demo.sdf
 ```
 
 The Gazebo window opens again, this time with a world that contains a robot equipped with sensors (thermal camera, depth camera, lidar, and others). The simulation is running and the sensors are actively producing data.
 
 To confirm data is flowing, open a **second terminal** in the container (`docker compose exec ros-gazebo zsh` in a new tab) and run:
 
+**Humble (Fortress):**
 ```bash
 # See all topics the simulation is publishing
 ign topic -l
@@ -153,7 +166,14 @@ ign topic -i --topic /thermal_camera
 ign topic -e --topic /thermal_camera
 ```
 
-If `ign topic -i` shows a publisher address and `ign topic -e` prints a stream of data, **the setup is complete and working.**
+**Jazzy (Harmonic):**
+```bash
+gz topic -l
+gz topic -i --topic /thermal_camera
+gz topic -e --topic /thermal_camera
+```
+
+If the topic commands show a publisher address and print a stream of data, **the setup is complete and working.**
 
 ---
 
@@ -171,10 +191,10 @@ This stops and removes the container. Your files in `workspace/` are safe — th
 
 ### Distro — Gazebo compatibility
 
-| Distro | Gazebo version | Launch command | |
+| Distro | Gazebo version | Launch command | Topic CLI |
 |---|---|---|---|
-| Humble | Fortress | `ign gazebo` | **default — robotics team** |
-| Jazzy | Harmonic | `gz sim` | |
+| Humble | Fortress | `ign gazebo` | `ign topic` |
+| Jazzy | Harmonic | `gz sim` | `gz topic` |
 
 ### Common commands
 

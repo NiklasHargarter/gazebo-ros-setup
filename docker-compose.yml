@@ -13,6 +13,10 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
       # Uncomment for server-client setup (see docs/server-client.md)
+      # Jazzy + Harmonic:
+      #- GZ_PARTITION=ros2_sim
+      #- GZ_IP=${WORKSTATION_IP}
+      # Humble + Fortress:
       #- IGN_PARTITION=ros2_sim
       #- IGN_IP=${WORKSTATION_IP}
     volumes:

@@ -24,9 +24,13 @@ No Mesa environment variable (`LIBGL_ALWAYS_SOFTWARE`, `LIBGL_ALWAYS_INDIRECT`, 
 
 ## Native install via Homebrew
 
-Installing Gazebo Fortress natively uses macOS's own OpenGL stack and works without any workarounds.
+Installing Gazebo natively uses macOS's own OpenGL stack and works without any workarounds. Install the version that matches the distro running on your server.
 
-### 1. Install Gazebo Fortress
+---
+
+### Humble + Fortress
+
+#### 1. Install Gazebo Fortress
 
 ```bash
 brew tap osrf/simulation
@@ -39,7 +43,7 @@ Verify the install:
 ign gazebo --version
 ```
 
-### 2. Run the GUI client
+#### 2. Run the GUI client
 
 With a simulation server already running on your Linux workstation (see [Remote GUI Client](server-client)):
 
@@ -49,11 +53,47 @@ export IGN_IP=<workstation IP>
 ign gazebo -g
 ```
 
-The Gazebo window opens on your Mac and connects to the running simulation on the workstation.
-
 To avoid setting the variables each session, add them to your shell profile:
 
 ```bash
 echo 'export IGN_PARTITION=ros2_sim' >> ~/.zshrc
 echo 'export IGN_IP=<workstation IP>' >> ~/.zshrc
 ```
+
+---
+
+### Jazzy + Harmonic
+
+#### 1. Install Gazebo Harmonic
+
+```bash
+brew tap osrf/simulation
+brew install gz-harmonic
+```
+
+Verify the install:
+
+```bash
+gz sim --version
+```
+
+#### 2. Run the GUI client
+
+With a simulation server already running on your Linux workstation (see [Remote GUI Client](server-client)):
+
+```bash
+export GZ_PARTITION=ros2_sim
+export GZ_IP=<workstation IP>
+gz sim -g
+```
+
+To avoid setting the variables each session, add them to your shell profile:
+
+```bash
+echo 'export GZ_PARTITION=ros2_sim' >> ~/.zshrc
+echo 'export GZ_IP=<workstation IP>' >> ~/.zshrc
+```
+
+---
+
+The Gazebo window opens on your Mac and connects to the running simulation on the workstation.
