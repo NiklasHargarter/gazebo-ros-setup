@@ -79,6 +79,9 @@ docker compose exec ros-gazebo zsh
 
 Run this in any new terminal to get more shells into the same container. You'll need three open terminals for the bridge verification below.
 
+{: .note }
+**Shell:** the image ships with `zsh` configured with [Oh My Zsh](https://ohmyz.sh/) and the [Powerlevel10k](https://github.com/romkatv/powerlevel10k) prompt (autosuggestions, syntax highlighting, fzf-tab completion). The prompt's icons render best in a [Nerd Font](https://www.nerdfonts.com/) — set one in your terminal emulator. Prefer plain bash? Swap `zsh` for `bash` in any `docker compose exec` command — it's always available as a fallback.
+
 ---
 
 ## 5. Verify ROS 2

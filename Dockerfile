@@ -18,7 +18,8 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
  && git clone --depth=1 https://github.com/zsh-users/zsh-autosuggestions.git   ${ZSH}/custom/plugins/zsh-autosuggestions \
  && git clone --depth=1 https://github.com/zsh-users/zsh-completions.git       ${ZSH}/custom/plugins/zsh-completions \
  && git clone --depth=1 https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH}/custom/plugins/zsh-syntax-highlighting \
- && git clone --depth=1 https://github.com/Aloxaf/fzf-tab.git                  ${ZSH}/custom/plugins/fzf-tab
+ && git clone --depth=1 https://github.com/Aloxaf/fzf-tab.git                  ${ZSH}/custom/plugins/fzf-tab \
+ && ${ZSH}/custom/themes/powerlevel10k/gitstatus/install -f
 
 COPY container_zshrc   /root/.zshrc
 COPY container_p10k.zsh /root/.p10k.zsh
