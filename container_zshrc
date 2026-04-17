@@ -11,8 +11,6 @@ DISABLE_UNTRACKED_FILES_DIRTY="true"
 zstyle ':omz:update' mode disabled
 
 plugins=(
-  git
-  fzf
   zsh-autosuggestions
   zsh-completions
   fzf-tab
