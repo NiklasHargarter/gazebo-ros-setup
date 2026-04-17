@@ -8,36 +8,36 @@ nav_order: 2
 
 **Requires:** Ubuntu 22.04 (other distros may work, untested) · Docker · optional NVIDIA GPU.
 
-This guide gets you from zero to a running Gazebo simulation in the container.
-
 ---
 
 ## 1. Install prerequisites
 
+Install Docker, configure it for non-root use, and (if you have an NVIDIA GPU) install and configure the NVIDIA Container Toolkit.
+
 | Step | Link | Why |
 |---|---|---|
-| Install Docker | [docs](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) | The container engine |
-| Docker non-root | [docs](https://docs.docker.com/engine/install/linux-postinstall/) | Needed for X11 passthrough |
-| *(NVIDIA users only)* NVIDIA Container Toolkit | [install](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian) · [configure](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration) | GPU access inside the container |
+| Install Docker | [docs.docker.com](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository){:target="_blank"} | The container engine |
+| Docker non-root | [docs.docker.com](https://docs.docker.com/engine/install/linux-postinstall/){:target="_blank"} | Needed for X11 passthrough |
+| *(NVIDIA only)* Toolkit install | [nvidia.com](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian){:target="_blank"} | GPU access inside the container |
+| *(NVIDIA only)* Toolkit configure | [nvidia.com](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration){:target="_blank"} | Registers the plugin with Docker |
 
-If you don't have an NVIDIA GPU, skip the last row — Gazebo will fall back to Mesa software rendering. Functional, just slower.
+{: .note }
+After the "Docker non-root" step, **log out and back in** (or reboot). `newgrp docker` works in one terminal but does not update your desktop session, and the GUI-spawning commands below need the updated group.
+
+If you don't have an NVIDIA GPU, skip the last two rows — Gazebo falls back to Mesa software rendering. Slower, still functional.
 
 ---
 
-## 2. Clone and prepare
+## 2. Clone the repo
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
-
-mkdir -p workspace/src            # your code goes here later
-touch .zsh_history                 # must be a file, not a folder
-chmod 666 .zsh_history             # container runs as root, needs write access
-echo "ROS_DISTRO=jazzy" > .env     # or humble
 ```
 
-{: .note }
-If you skip `touch .zsh_history`, Docker creates a *directory* by that name and the volume mount breaks. `chmod 666` lets the container (root, different UID) write to it.
+The repo already ships a `.env` (defaulting to `ROS_DISTRO=jazzy`) and the empty `workspace/src/` and `.zsh_history_dir/` folders the compose file expects. No file-creation steps needed.
+
+If you want Humble instead of Jazzy, edit `.env` and set `ROS_DISTRO=humble`.
 
 ---
 
@@ -54,7 +54,7 @@ docker compose up -d
 docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
 ```
 
-First run takes a few minutes (downloading the image). Subsequent starts are seconds.
+First run takes a few minutes (pulling the image). Subsequent starts are seconds.
 
 ---
 
@@ -80,7 +80,7 @@ Expected:
 /rosout
 ```
 
-Those two appear automatically when ROS 2 middleware initialises — proof it's running.
+These two appear automatically when the ROS 2 middleware initialises — proof it's running.
 
 ---
 
@@ -90,10 +90,11 @@ Those two appear automatically when ROS 2 middleware initialises — proof it's 
 
 | Distro | Command |
 |---|---|
-| Humble | `ign gazebo` |
-| Jazzy | `gz sim` |
+| Humble | `ign gazebo empty.sdf` |
+| Jazzy | `gz sim empty.sdf` |
 
-A window with a grid floor should appear. Ctrl-C to close.
+{: .note }
+Running `gz sim` / `ign gazebo` with no arguments opens a world-selection dialog, not a simulation. Pass `empty.sdf` explicitly to go straight to a running empty world.
 
 **Sensor demo — confirm data flows:**
 
@@ -119,7 +120,7 @@ Streaming messages = setup works.
 docker compose down
 ```
 
-Stops and removes the container. Your code in `workspace/` lives on the host, so it stays.
+Stops and removes the container. Your code in `workspace/` stays — it lives on the host.
 
 ---
 

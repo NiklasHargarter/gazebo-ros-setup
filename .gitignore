@@ -14,5 +14,12 @@ _site/
 .bundle/
 vendor/
 
-workspace/
-.zsh_history
+# Ignore colcon build artefacts but keep workspace/src tracked (with .gitkeep)
+workspace/build/
+workspace/install/
+workspace/log/
+workspace/src/*
+!workspace/src/.gitkeep
+
+# Ignore the history file itself, but keep the mount-point directory
+.zsh_history_dir/.zsh_history
