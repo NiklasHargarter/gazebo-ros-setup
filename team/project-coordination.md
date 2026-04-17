@@ -1,14 +1,8 @@
----
-title: Project Coordination
-layout: default
-nav_order: 7
----
-
 # Project Coordination
 
 This is the living project state document. It tracks what has been decided, what is still unknown, and who owns what. Update it as answers arrive from team meetings.
 
-For the technical architecture behind these decisions, see [Integration Architecture & Team Workflow](ros2-gazebo-integration).
+For the technical architecture behind these decisions, see [Integration Architecture & Team Workflow](ros2-gazebo-integration.md).
 
 ---
 

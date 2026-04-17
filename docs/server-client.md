@@ -1,7 +1,7 @@
 ---
 title: Remote GUI Client
 layout: default
-nav_order: 4
+nav_order: 5
 ---
 
 # Remote GUI Client
@@ -41,19 +41,17 @@ WORKSTATION_IP=192.168.1.100   # replace with your server's actual IP
 
 This value gets injected into the container as `IGN_IP` (Humble) or `GZ_IP` (Jazzy), telling the transport layer which network interface to advertise on.
 
-In `docker-compose.yml`, uncomment the block that matches your distro:
+### 2. Start the container with the server overlay
 
-```yaml
-# Jazzy + Harmonic:
-- GZ_PARTITION=ros2_sim
-- GZ_IP=${WORKSTATION_IP}
+The server env vars live in a separate overlay file (`docker-compose.server.yml`) so the base setup stays clean. Layer it on top of the base compose file:
 
-# Humble + Fortress:
-- IGN_PARTITION=ros2_sim
-- IGN_IP=${WORKSTATION_IP}
+```bash
+docker compose -f docker-compose.yml -f docker-compose.server.yml up
 ```
 
-### 2. Start the simulation server
+Add `-f docker-compose.nvidia.yml` too if you have an NVIDIA GPU. The overlay sets both `GZ_*` and `IGN_*` variables; whichever distro you run picks up the one it reads and ignores the other.
+
+### 3. Start the simulation server
 
 Inside the container, run Gazebo in server-only mode with headless rendering:
 

@@ -6,225 +6,53 @@ nav_order: 1
 
 # Getting Started with ROS 2 & Gazebo
 
-> **Supported distros:** ROS 2 Humble + Gazebo Fortress and ROS 2 Jazzy + Gazebo Harmonic.
-> Set `ROS_DISTRO=humble` or `ROS_DISTRO=jazzy` in `.env` — commands that differ between versions are labeled throughout this guide.
+A reproducible, container-based ROS 2 + Gazebo environment. You don't install ROS or Gazebo on your host — everything runs inside Docker.
+
+**Supported:** ROS 2 Humble + Gazebo Fortress · ROS 2 Jazzy + Gazebo Harmonic.
+Pick your distro with `ROS_DISTRO=humble` or `ROS_DISTRO=jazzy` in `.env`. Jazzy is the recommended default unless a project explicitly requires Humble.
 
 ---
 
-## What is this?
+## Pick your path
 
-This repo gives you a ready-to-run robotics development environment without installing anything on your own machine. It uses **Docker** — a tool that packages software and all its dependencies into a self-contained unit called a *container*. You can think of it as a lightweight isolated Linux machine that lives inside your real one. When you're done, you just stop the container; nothing is left behind on your host system.
-
-Inside the container you get:
-
-- **ROS 2** (Humble or Jazzy) — the Robot Operating System, a framework for writing robot software as a graph of communicating nodes
-- **Gazebo** (Fortress for Humble, Harmonic for Jazzy) — a physics simulator where you can drop in a robot world and have it produce realistic sensor data without any real hardware
-- GPU passthrough via the NVIDIA Container Toolkit, so the simulator can use your GPU for rendering
-- X11 forwarding, so graphical windows (like the Gazebo UI) appear on your desktop even though they're running inside the container
-
----
-
-## Assumptions
-
-- Host OS: **Ubuntu 22.04** (other Linux distros may work but are untested)
-- You have an **NVIDIA GPU** and its drivers installed (see [No NVIDIA GPU](#no-nvidia-gpu) if you don't)
-- You're comfortable running commands in a terminal
+| Goal | Start here |
+|---|---|
+| Run ROS 2 + Gazebo on my Linux machine for the first time | [Quickstart](quickstart) |
+| I'm on macOS | [macOS Setup](macos-setup) |
+| Write and run my own ROS 2 nodes in the container | [Writing Your Own Nodes](writing-your-own-nodes) |
+| Split the GUI from the simulation across two machines | [Remote GUI Client](server-client) |
+| Run Gazebo on a headless server (no display) | [Headless Rendering](headless-rendering) |
+| See what's actually inside the `desktop-full` base image | [Desktop Full Contents](desktop-full-contents) |
 
 ---
 
-## 1. Install Prerequisites
+## How the repo is organised
 
-Four things need to be on your host machine before you start. Do them in order — each one builds on the last.
+The `docker-compose.yml` is the minimal base. Optional features are **overlay files** you layer on top — no commented-out blocks, no hidden flags:
 
-| Step | What it is | Why you need it |
-|---|---|---|
-| [Install Docker](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) | The container engine | Runs and manages containers |
-| [Configure Docker for non-root use](https://docs.docker.com/engine/install/linux-postinstall/) | Lets your user run Docker without `sudo` | Required for X11 display passthrough to work correctly |
-| [Install NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#with-apt-ubuntu-debian) | Plugin that gives containers GPU access | Without it, Gazebo can't use your GPU |
-| [Configure NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration) | Registers the plugin with Docker | Activates the `nvidia.com/gpu` device injection used in `docker-compose.yml` |
+```bash
+# Base (CPU/Intel, local-only)
+docker compose up
+
+# With an NVIDIA GPU
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up
+
+# Server-client networking (see server-client guide)
+docker compose -f docker-compose.yml -f docker-compose.server.yml up
+
+# NVIDIA + server-client combined
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml -f docker-compose.server.yml up
+```
+
+Each overlay is small enough to read in one sitting. Stack any combination.
 
 ---
 
-## 2. Clone and Prepare the Repo
+## Distro cheat sheet
 
-```bash
-git clone <repo-url>
-cd gazebo-ros-setup
-```
-
-Then create the three files Docker expects to find before the first run:
-
-```bash
-mkdir -p workspace/src   # your code goes here later
-touch .zsh_history        # shell history file — must exist as a file, not a folder
-chmod 666 .zsh_history    # container runs as root (different UID), so it needs write access
-echo "ROS_DISTRO=humble" > .env   # or jazzy — controls which ROS + Gazebo version is used
-```
-
-{: .note }
-If you skip `touch .zsh_history`, Docker will create a *directory* called `.zsh_history` instead of a file, which breaks the volume mount. The `chmod 666` is needed because the container runs as root (a different user than your host account), so without it zsh will error on exit: `can't rename .zsh_history.new to $HISTFILE`.
-
-After this step your directory looks like:
-
-```text
-.
-├── docker-compose.yml   # describes the container: image, mounts, GPU, network
-├── Dockerfile           # recipe for building the ROS + Gazebo image
-├── container_zshrc      # shell config that gets copied into the container
-├── .env                 # sets ROS_DISTRO (humble or jazzy)
-├── workspace/           # mounted into the container at /workspace
-└── .zsh_history         # mounted so your history persists between sessions
-```
-
----
-
-## 3. Build and Start the Container
-
-```bash
-# Allow Docker containers to open windows on your screen
-xhost +local:docker
-
-# Build the image and start the container in the background (-d = detached)
-docker compose up -d --build
-```
-
-`docker compose up` reads `docker-compose.yml`, builds the image described in the `Dockerfile` (this takes a few minutes the first time — it's downloading and installing ROS 2 and Gazebo), then starts the container. The `--build` flag tells it to rebuild if anything has changed. After the first time you can omit `--build` if you haven't changed the Dockerfile.
-
----
-
-## 4. Open a Terminal Inside the Container
-
-The container is now running in the background. To get a shell inside it:
-
-```bash
-docker compose exec ros-gazebo zsh
-```
-
-`exec` connects you to the already-running container named `ros-gazebo` and opens a `zsh` shell. Your prompt will change, indicating you're now inside the container. You can open as many terminals as you like by running this command again in a new tab.
-
----
-
-## 5. Verify ROS 2 is Active
-
-Inside the container:
-
-```bash
-ros2 topic list
-```
-
-You should see:
-```
-/parameter_events
-/rosout
-```
-
-These two topics are created automatically by the ROS 2 middleware as soon as it initialises — you haven't started any nodes yet, but their presence confirms ROS 2 is running and your environment is sourced correctly.
-
----
-
-## 6. Launch Gazebo
-
-### Empty world — confirm the GUI opens
-
-**Humble (Fortress):**
-```bash
-ign gazebo
-```
-
-**Jazzy (Harmonic):**
-```bash
-gz sim
-```
-
-A window should open on your desktop showing an empty Gazebo world with a grid floor and a toolbar. This confirms two things at once: the simulator is working, and X11 forwarding is passing the GUI through to your screen. Close it with Ctrl-C in the terminal when you're done.
-
-### Sensor demo world — confirm simulation produces data
-
-**Humble (Fortress):**
-```bash
-ign gazebo sensors_demo.sdf
-```
-
-**Jazzy (Harmonic):**
-```bash
-gz sim sensors_demo.sdf
-```
-
-The Gazebo window opens again, this time with a world that contains a robot equipped with sensors (thermal camera, depth camera, lidar, and others). The simulation is running and the sensors are actively producing data.
-
-To confirm data is flowing, open a **second terminal** in the container (`docker compose exec ros-gazebo zsh` in a new tab) and run:
-
-**Humble (Fortress):**
-```bash
-# See all topics the simulation is publishing
-ign topic -l
-
-# Check that a publisher is active on the thermal camera topic
-ign topic -i --topic /thermal_camera
-
-# Stream live messages from the thermal camera (Ctrl-C to stop)
-ign topic -e --topic /thermal_camera
-```
-
-**Jazzy (Harmonic):**
-```bash
-gz topic -l
-gz topic -i --topic /thermal_camera
-gz topic -e --topic /thermal_camera
-```
-
-If the topic commands show a publisher address and print a stream of data, **the setup is complete and working.**
-
----
-
-## 7. Shut Down
-
-```bash
-docker compose down
-```
-
-This stops and removes the container. Your files in `workspace/` are safe — they live on your host machine, not inside the container.
-
----
-
-## Reference
-
-### Distro — Gazebo compatibility
-
-| Distro | Gazebo version | Launch command | Topic CLI |
+| Distro | Gazebo | Launch | Topic CLI |
 |---|---|---|---|
 | Humble | Fortress | `ign gazebo` | `ign topic` |
 | Jazzy | Harmonic | `gz sim` | `gz topic` |
 
-### Common commands
-
-```bash
-# Start without rebuilding (image already exists)
-docker compose up -d
-
-# Force a full rebuild from scratch
-docker compose up -d --build --no-cache
-
-# Open a second terminal in the same running container
-docker compose exec ros-gazebo zsh
-
-# Build your workspace packages inside the container
-colcon build --symlink-install
-
-# After building, source the overlay (done automatically on next shell open)
-source /workspace/install/setup.zsh
-```
-
----
-
-## No NVIDIA GPU
-
-Remove the `devices` block from `docker-compose.yml`. Headless GPU rendering won't work, but GUI mode via X11 will still run using software rendering (Mesa) — performance will be limited but functional for basic use.
-
----
-
-## Next Steps
-
-- **On a Mac?** — follow the [macOS Setup](macos-setup) guide instead of this one
-- **Headless rendering** — run Gazebo on a server with no display, using EGL: [Headless Rendering](headless-rendering)
-- **Writing your own nodes** — add your own ROS 2 nodes to the workspace: [Writing Your Own Nodes](writing-your-own-nodes)
+Commands in the guides that differ between distros are labeled **Humble** / **Jazzy**.

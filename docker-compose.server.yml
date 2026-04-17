@@ -1,0 +1,9 @@
+services:
+  ros-gazebo:
+    environment:
+      # Jazzy + Harmonic
+      - GZ_PARTITION=ros2_sim
+      - GZ_IP=${WORKSTATION_IP}
+      # Humble + Fortress (harmless if unused)
+      - IGN_PARTITION=ros2_sim
+      - IGN_IP=${WORKSTATION_IP}

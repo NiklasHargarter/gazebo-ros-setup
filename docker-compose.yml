@@ -1,30 +1,14 @@
 services:
   ros-gazebo:
-    # Switch from 'image:' to building your local Dockerfile
-    build:
-      context: .
-      args:
-        - ROS_DISTRO=${ROS_DISTRO:-humble}
+    image: ghcr.io/niklashargarter/gazebo-ros-setup:${ROS_DISTRO:-humble}
     container_name: ros-gazebo-${ROS_DISTRO:-humble}
-    # Use zsh as the primary command
     command: /bin/zsh
     stdin_open: true
     tty: true
     environment:
       - DISPLAY=${DISPLAY}
-      # Uncomment for server-client setup (see docs/server-client.md)
-      # Jazzy + Harmonic:
-      #- GZ_PARTITION=ros2_sim
-      #- GZ_IP=${WORKSTATION_IP}
-      # Humble + Fortress:
-      #- IGN_PARTITION=ros2_sim
-      #- IGN_IP=${WORKSTATION_IP}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      # Map a local folder into the container for easy code editing
       - ./workspace:/workspace
-      # Save your zsh history to your host machine
       - ./.zsh_history_dir:/root/.zsh_history_dir
-    devices:
-      - nvidia.com/gpu=all
     network_mode: "host"

@@ -1,0 +1,4 @@
+services:
+  ros-gazebo:
+    devices:
+      - nvidia.com/gpu=all
