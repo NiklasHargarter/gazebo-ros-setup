@@ -35,22 +35,35 @@ git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
 ```
 
-The repo already ships a `.env` (defaulting to `ROS_DISTRO=jazzy`) and the empty `workspace/src/` and `.zsh_history_dir/` folders the compose file expects. No file-creation steps needed.
+The repo ships a `.env` (defaulting to `ROS_DISTRO=jazzy`) and the placeholder folders the compose file expects. No file-creation needed.
 
-If you want Humble instead of Jazzy, edit `.env` and set `ROS_DISTRO=humble`.
+To use Humble instead, edit `.env` and set:
+
+```bash
+ROS_DISTRO=humble
+```
 
 ---
 
 ## 3. Start the container
 
+Allow Docker to open windows on your screen:
+
 ```bash
-# Let Docker open windows on your screen
 xhost +local:docker
+```
 
-# Base — CPU / Intel / no GPU
+Then start the container. **Pick one** of the two commands below based on whether you have an NVIDIA GPU.
+
+Without NVIDIA GPU (CPU / Intel / Mesa):
+
+```bash
 docker compose up -d
+```
 
-# Or: with NVIDIA GPU
+With NVIDIA GPU:
+
+```bash
 docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
 ```
 
@@ -64,17 +77,20 @@ First run takes a few minutes (pulling the image). Subsequent starts are seconds
 docker compose exec ros-gazebo zsh
 ```
 
-Run this in any new terminal to get more shells into the same container.
+Run this in any new terminal to get more shells into the same container. You'll need three open terminals for the bridge verification below.
 
 ---
 
 ## 5. Verify ROS 2
+
+Inside the container:
 
 ```bash
 ros2 topic list
 ```
 
 Expected:
+
 ```
 /parameter_events
 /rosout
@@ -84,37 +100,80 @@ These two appear automatically when the ROS 2 middleware initialises — proof i
 
 ---
 
-## 6. Launch Gazebo
+## 6. Launch an empty Gazebo world
 
-**Empty world — confirm the GUI opens:**
+Confirms the simulator starts and the GUI passes through X11.
 
-| Distro | Command |
-|---|---|
-| Humble | `ign gazebo empty.sdf` |
-| Jazzy | `gz sim empty.sdf` |
+Jazzy:
+
+```bash
+gz sim -r empty.sdf
+```
+
+Humble:
+
+```bash
+ign gazebo -r empty.sdf
+```
 
 {: .note }
-Running `gz sim` / `ign gazebo` with no arguments opens a world-selection dialog, not a simulation. Pass `empty.sdf` explicitly to go straight to a running empty world.
+Running `gz sim` / `ign gazebo` with no arguments opens a world-selection dialog, not a running simulation. Pass the SDF file and `-r` (run on start) to go straight into a ticking empty world.
 
-**Sensor demo — confirm data flows:**
-
-| Distro | Command |
-|---|---|
-| Humble | `ign gazebo sensors_demo.sdf` |
-| Jazzy | `gz sim sensors_demo.sdf` |
-
-Then in a second terminal inside the container:
-
-| Distro | Commands |
-|---|---|
-| Humble | `ign topic -l` · `ign topic -e --topic /thermal_camera` |
-| Jazzy  | `gz topic -l` · `gz topic -e --topic /thermal_camera` |
-
-Streaming messages = setup works.
+Leave the window open for the next step.
 
 ---
 
-## 7. Shut down
+## 7. Verify the ROS 2 ↔ Gazebo bridge
+
+This is what proves the image actually delivers on "ROS 2 + Gazebo working together" — Gazebo alone isn't enough. We bridge Gazebo's `/clock` topic into ROS 2 and watch it from the ROS side.
+
+With the empty world from Step 6 still running, open a **second** container shell:
+
+```bash
+docker compose exec ros-gazebo zsh
+```
+
+Start the bridge for the clock topic.
+
+Jazzy:
+
+```bash
+ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock
+```
+
+Humble:
+
+```bash
+ros2 run ros_ign_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock
+```
+
+The argument format is `<gz-topic>@<ros-msg-type>@<gz-msg-type>`. This is the whole bridge config — no YAML file needed for a single topic.
+
+Open a **third** container shell:
+
+```bash
+docker compose exec ros-gazebo zsh
+```
+
+Confirm `/clock` is now visible from the ROS 2 side:
+
+```bash
+ros2 topic list
+```
+
+You should see `/clock` alongside `/parameter_events` and `/rosout`.
+
+Stream messages:
+
+```bash
+ros2 topic echo /clock
+```
+
+A ticking clock stream = **bridge works end to end**. Ctrl-C out of each terminal when done.
+
+---
+
+## 8. Shut down
 
 ```bash
 docker compose down
@@ -126,12 +185,22 @@ Stops and removes the container. Your code in `workspace/` stays — it lives on
 
 ## Common commands
 
+Rebuild the image from scratch:
+
 ```bash
-docker compose up -d                     # start (no rebuild)
-docker compose up -d --build --no-cache  # rebuild from scratch
-docker compose exec ros-gazebo zsh       # second terminal in same container
-colcon build --symlink-install           # build your workspace packages (in container)
-source /workspace/install/setup.zsh      # source overlay (automatic in new shells)
+docker compose up -d --build --no-cache
+```
+
+Build your workspace packages (run inside the container):
+
+```bash
+colcon build --symlink-install
+```
+
+Re-source the overlay manually (new shells do this automatically):
+
+```bash
+source /workspace/install/setup.zsh
 ```
 
 ---
