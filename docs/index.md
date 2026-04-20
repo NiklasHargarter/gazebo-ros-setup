@@ -23,6 +23,8 @@ Pick your distro with `ROS_DISTRO=humble` or `ROS_DISTRO=jazzy` in `.env`. Jazzy
 | Split the GUI from the simulation across two machines | [Remote GUI Client](server-client) |
 | Run Gazebo on a headless server (no display) | [Headless Rendering](headless-rendering) |
 | See what's actually inside the `desktop-full` base image | [Desktop Full Contents](desktop-full-contents) |
+| Minimal custom world + a Python node consuming a camera | [Example: Camera World](example-camera-world) |
+| Off-the-shelf robot — full TurtleBot 4 sim on Jazzy | [Example: TurtleBot 4](example-turtlebot4) |
 
 ---
 

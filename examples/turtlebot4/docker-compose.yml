@@ -1,0 +1,12 @@
+# Override that swaps the base image for a locally-built one with TB4 installed.
+# Usage from repo root:
+#   docker compose -f docker-compose.yml -f examples/turtlebot4/docker-compose.yml up -d --build
+# Stack with docker-compose.nvidia.yml for GPU acceleration.
+services:
+  ros-gazebo:
+    image: gazebo-ros-setup-turtlebot4:${ROS_DISTRO:-jazzy}
+    build:
+      context: .
+      dockerfile: examples/turtlebot4/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
