@@ -35,11 +35,6 @@ ros2 launch turtlebot4_gz_bringup turtlebot4_gz.launch.py
 
 Gazebo opens with a TurtleBot 4 on the `depot` world. The Create 3 bringup, RPLIDAR, camera, and EKF nodes all spin up automatically.
 
-{: .note }
-If that launch file isn't found, check which launch your installed version ships:
-`ros2 pkg prefix turtlebot4_gz_bringup && ls $(ros2 pkg prefix turtlebot4_gz_bringup)/share/turtlebot4_gz_bringup/launch`.
-The package was renamed from `turtlebot4_ignition_bringup` when TB4 moved to gz-sim.
-
 ---
 
 ## 3. Verify topics
@@ -97,13 +92,6 @@ One-shot (robot moves briefly, then safety-stops):
 ros2 topic pub --once /cmd_vel geometry_msgs/msg/TwistStamped \
   '{twist: {linear: {x: 0.2}}}'
 ```
-
-{: .note }
-**Zsh quoting gotcha:** keep the whole command on one line. Zsh mangles backslash-newlines mid-YAML, which splits the message into multiple shell words and produces an unhelpful `unrecognized arguments` error. Single-quote the YAML so `{`, `}`, and `:` aren't interpreted by the shell.
-
-### Why `teleop_twist_keyboard` doesn't move the robot
-
-`teleop_twist_keyboard` publishes plain `geometry_msgs/msg/Twist`. TB4 on Jazzy subscribes to `TwistStamped`. The topic name matches, so `ros2 topic list` looks fine, but no message gets through. Either use `ros2 topic pub` as above, or run a twist-to-twist-stamped relay, or use `turtlebot4_teleop` if available.
 
 ---
 

@@ -10,21 +10,9 @@ On macOS, use a Linux workstation as the simulation server and connect from your
 
 ---
 
-## Why the container does not work on macOS
-
-On Linux, Docker containers share the host's GPU and X11 socket directly. On macOS, Docker runs inside a Linux VM with no GPU access and no path to a working display.
-
-**No GPU passthrough.** The VM cannot reach the Mac's GPU. Mesa falls back to its software rasterizer (swrast), but swrast requires DRI kernel interfaces that also do not exist in the VM.
-
-**XQuartz GLX is broken over the Docker network boundary.** XQuartz is macOS's X11 server. Containers reach it over TCP (`DISPLAY=host.docker.internal:0`), but XQuartz's GLX implementation does not advertise the framebuffer configurations that Mesa and Qt require — `X_GLXCreateNewContext` returns `BadValue` (visual ID `0x0`) and Qt aborts.
-
-No Mesa environment variable (`LIBGL_ALWAYS_SOFTWARE`, `LIBGL_ALWAYS_INDIRECT`, etc.) fixes this — the failure is in XQuartz's GLX layer, not in Mesa's driver selection.
-
----
-
 ## Native install via Homebrew
 
-Installing Gazebo natively uses macOS's own OpenGL stack and works without any workarounds. Install the version that matches the distro running on your server.
+Install the Gazebo version matching the distro on your server.
 
 ---
 

@@ -21,5 +21,12 @@ workspace/log/
 workspace/src/*
 !workspace/src/.gitkeep
 
+# Core stack is cloned in by each user; never commit it or its build output
+core_ws/build/
+core_ws/install/
+core_ws/log/
+core_ws/src/*
+!core_ws/src/.gitkeep
+
 # Ignore the history file itself, but keep the mount-point directory
 .zsh_history_dir/.zsh_history

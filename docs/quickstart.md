@@ -119,9 +119,6 @@ Humble:
 ign gazebo -r empty.sdf
 ```
 
-{: .note }
-Running `gz sim` / `ign gazebo` with no arguments opens a world-selection dialog, not a running simulation. Pass the SDF file and `-r` (run on start) to go straight into a ticking empty world.
-
 Leave the window open for the next step.
 
 ---

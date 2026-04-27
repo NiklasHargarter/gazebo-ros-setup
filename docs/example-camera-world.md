@@ -58,22 +58,11 @@ New shells auto-source `install/setup.zsh`; for the current shell run it manuall
 ros2 launch /workspace/launch/camera_demo.launch.py
 ```
 
-What you should see:
-
-1. A Gazebo window with a red box on a grey plane.
-2. In the terminal:
-
-   ```
-   [image_consumer]: Subscribed to /camera/image
-   [image_consumer]: First frame: 640x480 encoding=rgb8 step=1920 bytes=921600
-   [image_consumer]: 58 frames in 2.00s (29.0 fps)
-   ```
+A Gazebo window opens with a red box on a grey plane, and the subscriber logs frame info to the terminal.
 
 ---
 
-## 4. Run the pieces manually (debugging)
-
-When the combined launch hides what's going on:
+## Running the pieces manually
 
 ```bash
 # shell 1 — simulator
@@ -84,12 +73,12 @@ ros2 run ros_gz_bridge parameter_bridge \
     /camera/image@sensor_msgs/msg/Image@gz.msgs.Image
 
 # shell 3 — verify
-ros2 topic list                  # /camera/image should appear
-ros2 topic hz /camera/image      # ~30 Hz
+ros2 topic list
+ros2 topic hz /camera/image
 ros2 run rqt_image_view rqt_image_view /camera/image
 ```
 
-If `/camera/image` isn't on the ROS side, check the gz side first: `gz topic -l`. The bridge argument is `<topic>@<ROS type>@<gz type>`.
+The bridge argument format is `<topic>@<ROS type>@<gz type>`.
 
 ---
 
@@ -102,17 +91,6 @@ If `/camera/image` isn't on the ROS side, check the gz side first: `gz topic -l`
   │  + sensor)  │                     └──────────────┘
   └─────────────┘
 ```
-
----
-
-## Extending it
-
-- Add more models and watch the frame change live.
-- Swap the static camera for one mounted on a movable base + `cmd_vel`.
-- Add `<sensor type="depth_camera">` and bridge the depth topic.
-- Add `ros-jazzy-cv-bridge` and replace the logging with OpenCV processing.
-
-See [Writing Your Own Nodes](writing-your-own-nodes) for the package-creation workflow in general.
 
 ---
 

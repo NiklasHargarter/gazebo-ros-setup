@@ -1,6 +1,6 @@
 services:
   ros-gazebo:
-    image: ghcr.io/niklashargarter/gazebo-ros-setup:${ROS_DISTRO:-humble}
+    image: ${CONSUMER_IMAGE:?Set CONSUMER_IMAGE in .env (e.g. my-consumer:humble). Build it locally from a Dockerfile that does FROM project-core:${ROS_DISTRO}.}
     container_name: ros-gazebo-${ROS_DISTRO:-humble}
     command: /bin/zsh
     stdin_open: true
@@ -10,5 +10,6 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ./workspace:/workspace
+      - ./core_ws:/core_ws
       - ./.zsh_history_dir:/root/.zsh_history_dir
     network_mode: "host"

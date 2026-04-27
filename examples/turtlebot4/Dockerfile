@@ -1,7 +1,12 @@
-# Extends the base image with the TurtleBot 4 simulation stack.
-# Only targets Jazzy — the TB4 package names and Gazebo version differ on Humble.
+# Stand-in for the project-core image, populated with the TurtleBot 4 stack
+# instead of the real (private) core deps. Same role as core.Dockerfile at
+# the repo root: produces an image tagged project-core:${ROS_DISTRO} that
+# consumer images then FROM.
+#
+# Jazzy only — TB4 package names and Gazebo version differ on Humble.
 ARG ROS_DISTRO=jazzy
-FROM ghcr.io/niklashargarter/gazebo-ros-setup:${ROS_DISTRO}
+ARG BASE_IMAGE=ghcr.io/niklashargarter/gazebo-ros-setup:${ROS_DISTRO}
+FROM ${BASE_IMAGE}
 
 ARG ROS_DISTRO
 ENV ROS_DISTRO=${ROS_DISTRO}

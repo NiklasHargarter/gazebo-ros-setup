@@ -67,20 +67,6 @@ DISPLAY= gz sim -v 4 -s -r --headless-rendering sensors_demo.sdf
 
 The `-s` flag starts only the physics server — no GUI window opens. The simulation runs and publishes topics, waiting for a client to connect.
 
-To confirm it is running, open a second terminal in the container and check topics:
-
-**Humble (Fortress):**
-```bash
-ign topic -l
-```
-
-**Jazzy (Harmonic):**
-```bash
-gz topic -l
-```
-
-You should see the full list of simulation topics. If the list is empty, the server did not start correctly.
-
 ---
 
 ## Client setup
@@ -103,29 +89,4 @@ export GZ_IP=<server IP>
 gz sim -g
 ```
 
-Replace `<server IP>` with the same IP you set in `WORKSTATION_IP` on the server. The Gazebo GUI window should open and connect to the running simulation.
-
----
-
-## Verifying the connection
-
-On the **client**, once the GUI is open, check that topics are visible:
-
-**Humble (Fortress):**
-```bash
-ign topic -l
-```
-
-**Jazzy (Harmonic):**
-```bash
-gz topic -l
-```
-
-If you see the simulation's topics (same list as on the server), the transport layer has successfully connected. If the list is empty or only shows local topics, the client cannot reach the server — check the IP, firewall rules, and that both sides use the same partition value.
-
----
-
-## Firewall and network notes
-
-- Both machines must be able to reach each other on the ports the transport layer uses. If there is a firewall between them, open UDP port **11345** and the ephemeral range used by ZeroMQ (typically 49152–65535).
-- If the server is on a remote network (VPN, cloud), ensure routing allows direct UDP between client and server — neither Ignition nor GZ transport works through NAT without additional configuration.
+Replace `<server IP>` with the same IP you set in `WORKSTATION_IP` on the server.

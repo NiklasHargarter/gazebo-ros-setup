@@ -68,8 +68,6 @@ ros2 run my_package my_node
 
 Expected output: `Hi from my_package.`
 
-If you get `Package 'my_package' not found`, the overlay isn't sourced. Open a new shell (auto-sources) or run `source /workspace/install/setup.zsh` manually.
-
 ---
 
 ## 4. Edit and iterate
