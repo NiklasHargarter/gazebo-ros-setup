@@ -55,15 +55,11 @@ docker compose -f docker-compose.yml -f docker-compose.server.yml up      # remo
 | Split the GUI from the simulation across two machines | [Remote GUI Client](server-client) |
 | Run Gazebo on a headless server (no display) | [Headless Rendering](headless-rendering) |
 | See what's inside the `desktop-full` base image | [Desktop Full Contents](desktop-full-contents) |
-| Minimal custom world + a Python camera subscriber | [Example: Camera World](example-camera-world) |
 
 ---
 
-## Distro cheat sheet
+## Quick reference
 
 | Distro | Gazebo | Launch | Topic CLI |
 |---|---|---|---|
 | Humble | Fortress | `ign gazebo` | `ign topic` |
-| Jazzy | Harmonic | `gz sim` | `gz topic` |
-
-Commands in the guides that differ between distros are labeled **Humble** / **Jazzy**.

@@ -12,11 +12,9 @@ On macOS, use a Linux workstation as the simulation server and connect from your
 
 ## Native install via Homebrew
 
-Install the Gazebo version matching the distro on your server.
+Install Gazebo Fortress to match the Humble server.
 
 ---
-
-### Humble + Fortress
 
 #### 1. Install Gazebo Fortress
 
@@ -48,39 +46,6 @@ echo 'export IGN_PARTITION=ros2_sim' >> ~/.zshrc
 echo 'export IGN_IP=<workstation IP>' >> ~/.zshrc
 ```
 
----
-
-### Jazzy + Harmonic
-
-#### 1. Install Gazebo Harmonic
-
-```bash
-brew tap osrf/simulation
-brew install gz-harmonic
-```
-
-Verify the install:
-
-```bash
-gz sim --version
-```
-
-#### 2. Run the GUI client
-
-With a simulation server already running on your Linux workstation (see [Remote GUI Client](server-client)):
-
-```bash
-export GZ_PARTITION=ros2_sim
-export GZ_IP=<workstation IP>
-gz sim -g
-```
-
-To avoid setting the variables each session, add them to your shell profile:
-
-```bash
-echo 'export GZ_PARTITION=ros2_sim' >> ~/.zshrc
-echo 'export GZ_IP=<workstation IP>' >> ~/.zshrc
-```
 
 ---
 
