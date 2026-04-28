@@ -25,12 +25,7 @@ source $ZSH/oh-my-zsh.sh
 # --- ROS 2 Environment ---
 source /opt/ros/${ROS_DISTRO}/setup.zsh
 
-# --- Core Workspace Overlay (auto-source if built) ---
-if [ -f /core_ws/install/setup.zsh ]; then
-  source /core_ws/install/setup.zsh
-fi
-
-# --- User Workspace Overlay (auto-source if built) ---
+# --- Consumer Workspace Overlay (auto-source if built) ---
 if [ -f /workspace/install/setup.zsh ]; then
   source /workspace/install/setup.zsh
 fi
@@ -43,5 +38,4 @@ setopt appendhistory
 setopt sharehistory
 setopt incappendhistory
 
-# Add any of your favorite aliases here!
 alias ll='ls -la'

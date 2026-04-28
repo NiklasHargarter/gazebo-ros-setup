@@ -12,7 +12,7 @@
 : "${ROS_SETUP_DIR:?set ROS_SETUP_DIR to the gazebo-ros-setup repo root before sourcing}"
 
 _ros_env_file="$ROS_SETUP_DIR/.env"
-_ros_service="ros-gazebo"
+_ros_service="core"
 
 # Read KEY from .env, or fall back to DEFAULT.
 _ros_get() {
@@ -65,20 +65,21 @@ _ros_compose() {
 ros-help() {
     cat <<EOF
 gazebo-ros-setup shortcuts  (ROS_DISTRO=$(_ros_get ROS_DISTRO humble)  ROS_PROFILE=$(_ros_get ROS_PROFILE base))
-  ros-zsh [cmd...]   Exec zsh (or a command) inside the running container
-  ros-up             Start stack in foreground
-  ros-upd            Start stack detached
-  ros-down           Stop and remove stack
-  ros-restart        Restart the service
-  ros-logs [args]    Tail logs (default: -f)
-  ros-ps             Show compose status
-  ros-build          Rebuild the image
-  ros-run [cmd...]   One-off container via 'compose run --rm'
-  ros-compose ...    Raw 'docker compose' with current profile/distro
-  ros-root           cd into the gazebo-ros-setup repo
-  ros-profile NAME   Set profile (base|nvidia|server|nvidia-server) in .env
-  ros-distro NAME    Set ROS_DISTRO (humble|jazzy|...) in .env
-  ros-help           Show this help
+  ros-zsh [cmd...]         Exec zsh (or a command) inside the core container
+  ros-exec SVC [cmd...]    Exec zsh (or a command) inside any service container
+  ros-up [args]            Start stack in foreground
+  ros-upd [args]           Start stack detached (pass --profile NAME for consumers)
+  ros-down                 Stop and remove stack
+  ros-restart [svc]        Restart a service (default: core)
+  ros-logs [args]          Tail logs (default: -f)
+  ros-ps                   Show compose status
+  ros-build                Rebuild the image
+  ros-run [cmd...]         One-off container via 'compose run --rm' (core)
+  ros-compose ...          Raw 'docker compose' with current profile/distro
+  ros-root                 cd into the gazebo-ros-setup repo
+  ros-profile NAME         Set profile (base|nvidia|server|nvidia-server) in .env
+  ros-distro NAME          Set ROS_DISTRO (humble|jazzy|...) in .env
+  ros-help                 Show this help
 EOF
 }
 
@@ -96,8 +97,18 @@ ros-zsh() {
     if [ $# -eq 0 ]; then
         _ros_compose exec "$_ros_service" /bin/zsh
     else
-        # -i so the container's .zshrc runs and ROS / workspace overlay are on PATH.
         _ros_compose exec "$_ros_service" /bin/zsh -ic "$*"
+    fi
+}
+
+# Exec into any named service: ros-exec consumer-example  or  ros-exec consumer-example ros2 topic list
+ros-exec() {
+    local svc="${1:?usage: ros-exec SERVICE [cmd...]}"
+    shift
+    if [ $# -eq 0 ]; then
+        _ros_compose exec "$svc" /bin/zsh
+    else
+        _ros_compose exec "$svc" /bin/zsh -ic "$*"
     fi
 }
 

@@ -1,5 +1,5 @@
 services:
-  ros-gazebo:
+  core:
     environment:
       # Jazzy + Harmonic
       - GZ_PARTITION=ros2_sim

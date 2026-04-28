@@ -4,13 +4,13 @@
 #
 # Build from the repo root:
 #   docker build -f examples/consumer-camera/Dockerfile \
-#                -t consumer-camera:jazzy \
-#                --build-arg ROS_DISTRO=jazzy \
+#                -t consumer-camera:humble \
+#                --build-arg ROS_DISTRO=humble \
 #                .
 #
-# Then set CONSUMER_IMAGE=consumer-camera:jazzy in .env and `docker compose up`.
+# Then set CONSUMER_IMAGE=consumer-camera:humble in .env and `docker compose up`.
 
-ARG ROS_DISTRO=jazzy
+ARG ROS_DISTRO=humble
 FROM project-core:${ROS_DISTRO}
 
 ARG ROS_DISTRO

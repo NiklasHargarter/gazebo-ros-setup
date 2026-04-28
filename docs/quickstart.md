@@ -6,13 +6,13 @@ nav_order: 2
 
 # Quickstart (Linux)
 
-**Requires:** Ubuntu 22.04 (other distros may work, untested) · Docker · optional NVIDIA GPU.
+**Requires:** Ubuntu 22.04+ · Docker · optional NVIDIA GPU.
+
+This repo provides the dev-container infrastructure. You bring the core source (private repo) and your own consumer code. Both images are built locally on each machine — nothing with private source is ever published.
 
 ---
 
 ## 1. Install prerequisites
-
-Install Docker, configure it for non-root use, and (if you have an NVIDIA GPU) install and configure the NVIDIA Container Toolkit.
 
 | Step | Link | Why |
 |---|---|---|
@@ -22,30 +22,77 @@ Install Docker, configure it for non-root use, and (if you have an NVIDIA GPU) i
 | *(NVIDIA only)* Toolkit configure | [nvidia.com](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html#configuration){:target="_blank"} | Registers the plugin with Docker |
 
 {: .note }
-After the "Docker non-root" step, **log out and back in** (or reboot). `newgrp docker` works in one terminal but does not update your desktop session, and the GUI-spawning commands below need the updated group.
-
-If you don't have an NVIDIA GPU, skip the last two rows — Gazebo falls back to Mesa software rendering. Slower, still functional.
+After the "Docker non-root" step, **log out and back in** (or reboot). `newgrp docker` works in one terminal but does not update your desktop session.
 
 ---
 
-## 2. Clone the repo
+## 2. Clone this repo
 
 ```bash
 git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
 ```
 
-The repo ships a `.env` (defaulting to `ROS_DISTRO=jazzy`) and the placeholder folders the compose file expects. No file-creation needed.
+---
 
-To use Humble instead, edit `.env` and set:
+## 3. Clone the core source
+
+The core stack consists of three repos. Clone them all into `core_ws/src/`:
 
 ```bash
+git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
+git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
+git clone https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
+cd core_ws/src/turtlebot3_manipulation && git checkout humble && cd -
+```
+
+`core_ws/src/` is gitignored so these clones won't show up as changes to the dev-container repo.
+
+---
+
+## 4. Build the project-core image
+
+Core's apt deps and source packages are baked into a local image. No published image exists — every machine builds it once:
+
+```bash
+docker build -f core.Dockerfile \
+             -t project-core:humble \
+             --build-arg ROS_DISTRO=humble .
+```
+
+Only rerun this when core *dependencies* change (new apt package, new ROS package dep) or when the core source itself changes. Rebuilding is the one step to pick up core changes.
+
+---
+
+## 5. Build your consumer image
+
+Your consumer image extends `project-core` with your own deps (AI/CV libraries, custom apt packages, etc.). The `consumer-template/` directory is a starting point:
+
+```bash
+docker build -t my-consumer:humble \
+             --build-arg ROS_DISTRO=humble \
+             consumer-template/
+```
+
+Edit `consumer-template/Dockerfile` to add your deps before building.
+
+---
+
+## 6. Configure `.env`
+
+```bash
+cp .env.example .env
+```
+
+The default only needs `ROS_DISTRO`:
+
+```env
 ROS_DISTRO=humble
 ```
 
 ---
 
-## 3. Start the container
+## 7. Start the stack
 
 Allow Docker to open windows on your screen:
 
@@ -53,7 +100,7 @@ Allow Docker to open windows on your screen:
 xhost +local:docker
 ```
 
-Then start the container. **Pick one** of the two commands below based on whether you have an NVIDIA GPU.
+Start core. **Pick one** based on whether you have an NVIDIA GPU.
 
 Without NVIDIA GPU (CPU / Intel / Mesa):
 
@@ -67,24 +114,23 @@ With NVIDIA GPU:
 docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
 ```
 
-First run takes a few minutes (pulling the image). Subsequent starts are seconds.
-
----
-
-## 4. Open a shell inside
+Start a consumer (optional):
 
 ```bash
-docker compose exec ros-gazebo zsh
+docker compose --profile example up -d
 ```
-
-Run this in any new terminal to get more shells into the same container. You'll need three open terminals for the bridge verification below.
-
-{: .note }
-**Shell:** the image ships with `zsh` configured with [Oh My Zsh](https://ohmyz.sh/) and the [Powerlevel10k](https://github.com/romkatv/powerlevel10k) prompt (autosuggestions, syntax highlighting, fzf-tab completion). The prompt's icons render best in a [Nerd Font](https://www.nerdfonts.com/) — set one in your terminal emulator. Prefer plain bash? Swap `zsh` for `bash` in any `docker compose exec` command — it's always available as a fallback.
 
 ---
 
-## 5. Verify ROS 2
+## 8. Open a shell in core
+
+```bash
+docker compose exec core bash
+```
+
+---
+
+## 9. Verify ROS 2
 
 Inside the container:
 
@@ -99,114 +145,62 @@ Expected:
 /rosout
 ```
 
-These two appear automatically when the ROS 2 middleware initialises — proof it's running.
+---
+
+## 10. Launch the HuGO simulation
+
+Confirms the simulator starts, the GUI passes through X11, and the full core stack comes up:
+
+```bash
+ros2 launch hugo_moveit_config gezebo.launch.py
+```
+
+Gazebo and RViz should open with the HuGO robot loaded. Ctrl-C to stop.
 
 ---
 
-## 6. Launch an empty Gazebo world
+## 11. Verify ROS 2 topics
 
-Confirms the simulator starts and the GUI passes through X11.
-
-Jazzy:
+With the simulation running, open a **second** shell:
 
 ```bash
-gz sim -r empty.sdf
-```
-
-Humble:
-
-```bash
-ign gazebo -r empty.sdf
-```
-
-Leave the window open for the next step.
-
----
-
-## 7. Verify the ROS 2 ↔ Gazebo bridge
-
-This is what proves the image actually delivers on "ROS 2 + Gazebo working together" — Gazebo alone isn't enough. We bridge Gazebo's `/clock` topic into ROS 2 and watch it from the ROS side.
-
-With the empty world from Step 6 still running, open a **second** container shell:
-
-```bash
-docker compose exec ros-gazebo zsh
-```
-
-Start the bridge for the clock topic.
-
-Jazzy:
-
-```bash
-ros2 run ros_gz_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock@gz.msgs.Clock
-```
-
-Humble:
-
-```bash
-ros2 run ros_ign_bridge parameter_bridge /clock@rosgraph_msgs/msg/Clock@ignition.msgs.Clock
-```
-
-The argument format is `<gz-topic>@<ros-msg-type>@<gz-msg-type>`. This is the whole bridge config — no YAML file needed for a single topic.
-
-Open a **third** container shell:
-
-```bash
-docker compose exec ros-gazebo zsh
-```
-
-Confirm `/clock` is now visible from the ROS 2 side:
-
-```bash
+docker compose exec core bash
 ros2 topic list
 ```
 
-You should see `/clock` alongside `/parameter_events` and `/rosout`.
-
-Stream messages:
-
-```bash
-ros2 topic echo /clock
-```
-
-A ticking clock stream = **bridge works end to end**. Ctrl-C out of each terminal when done.
+You should see topics including `/joint_states`, `/tf`, `/clock`, and the controller topics. A populated topic list confirms the bridge and ros2_control stack are running end to end.
 
 ---
 
-## 8. Shut down
+## 12. Shut down
 
 ```bash
 docker compose down
 ```
 
-Stops and removes the container. Your code in `workspace/` stays — it lives on the host.
-
 ---
 
 ## Common commands
 
-Rebuild the image from scratch:
+Rebuild the core image after a change:
 
 ```bash
-docker compose up -d --build --no-cache
+docker build -f core.Dockerfile -t project-core:humble --build-arg ROS_DISTRO=humble .
 ```
 
-Build your workspace packages (run inside the container):
+Build your consumer workspace packages (run inside a consumer container):
 
 ```bash
+cd /workspace
 colcon build --symlink-install
-```
-
-Re-source the overlay manually (new shells do this automatically):
-
-```bash
-source /workspace/install/setup.zsh
 ```
 
 ---
 
 ## Next steps
 
-- [Writing Your Own Nodes](writing-your-own-nodes)
+- [Architecture](architecture) — full picture of the core / consumer image layers
+- [Core Stack](core-stack) — building and iterating on the core image
+- [Writing Your Own Nodes](writing-your-own-nodes) — adding consumer packages
 - [Remote GUI Client](server-client) — split simulation from GUI across machines
 - [Headless Rendering](headless-rendering) — run on a server with no display

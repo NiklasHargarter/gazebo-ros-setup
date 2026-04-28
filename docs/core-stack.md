@@ -17,13 +17,16 @@ For the bigger picture (base / core / consumer image layers), see
 
 ## Clone the core source
 
-The core code lives in a private GitLab repo. From the repo root on the host:
+The core stack consists of three repos. From the repo root on the host:
 
 ```bash
-git clone <CORE_REPO_GITLAB_URL> core_ws/src/core
+git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
+git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
+git clone https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
+cd core_ws/src/turtlebot3_manipulation && git checkout humble && cd -
 ```
 
-`core_ws/src/` is gitignored, so the clone won't pollute this repo.
+`core_ws/src/` is gitignored, so these clones won't pollute this repo.
 
 ## Build the core image
 

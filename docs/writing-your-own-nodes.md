@@ -6,35 +6,43 @@ nav_order: 4
 
 # Writing Your Own Nodes
 
-How to add your own ROS 2 package to the container. Covers only the container-specific parts — for ROS 2 concepts (nodes, topics, pub/sub) see the [official tutorials](https://docs.ros.org/en/jazzy/Tutorials.html).
+How to add consumer ROS 2 packages to the container. Covers only the container-specific parts — for ROS 2 concepts (nodes, topics, pub/sub) see the [official tutorials](https://docs.ros.org/en/jazzy/Tutorials.html).
+
+For the full picture of how consumer code relates to the core image, see [Architecture](architecture).
 
 ---
 
 ## How the workspace works
 
-The `./workspace` directory on your host is mounted into the container at `/workspace`:
+Consumer packages live in a workspace that is bind-mounted into the consumer container at `/workspace`:
 
 ```
-host: ./workspace/        ←→   container: /workspace/
+/opt/ros/${ROS_DISTRO}   ← ROS base
+/opt/ros_overlay         ← core packages (baked into the image)
+/workspace/install       ← consumer overlay (sourced automatically if built)
+```
+
+```
+host: ./workspace/        ←→   consumer container: /workspace/
          src/                          src/         ← your packages
          install/          ←  colcon build writes here
          build/
          log/
 ```
 
-You edit code on the host with your normal tools; the container builds and runs it. `install/setup.zsh` is sourced automatically when you open a new shell (see `container_zshrc`), so freshly built packages are immediately available.
+You edit code on the host with your normal tools; the container builds and runs it.
 
 ---
 
 ## 1. Create a package
 
-Open a shell in the container:
+Open a shell in your consumer container:
 
 ```bash
-docker compose exec ros-gazebo zsh
+docker compose exec consumer-example zsh
 ```
 
-Use the ROS 2 scaffolder — it generates a correct `package.xml`, `setup.py`, and resource markers in one step:
+Use the ROS 2 scaffolder:
 
 ```bash
 cd /workspace/src
@@ -42,8 +50,6 @@ ros2 pkg create --build-type ament_python my_package --node-name my_node
 ```
 
 For C++ packages use `--build-type ament_cmake`; everything else below is identical.
-
-The generated `my_node.py` is a stub `main()` that prints "Hi from my_package." — enough to prove the build/run pipeline works.
 
 ---
 
@@ -104,10 +110,10 @@ Because of `--symlink-install` you don't need to rebuild. Just re-run:
 ros2 run my_package my_node
 ```
 
-Verify from a second container shell:
+Verify from a second consumer shell or from core:
 
 ```bash
-docker compose exec ros-gazebo zsh
+docker compose exec core bash
 ros2 topic echo /my_topic
 ```
 
