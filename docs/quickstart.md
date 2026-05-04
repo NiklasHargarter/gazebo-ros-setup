@@ -37,16 +37,11 @@ cd gazebo-ros-setup
 
 ## 3. Clone the core source
 
-The core stack consists of three repos. Clone them all into `core_ws/src/`:
-
 ```bash
 git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
-git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
-git clone https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
-cd core_ws/src/turtlebot3_manipulation && git checkout humble && cd -
 ```
 
-`core_ws/src/` is gitignored so these clones won't show up as changes to the dev-container repo.
+`core_ws/src/` is gitignored.
 
 ---
 

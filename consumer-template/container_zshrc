@@ -25,10 +25,11 @@ source $ZSH/oh-my-zsh.sh
 # --- ROS 2 Environment ---
 source /opt/ros/${ROS_DISTRO}/setup.zsh
 
+# --- Core Workspace (baked into project-core image) ---
+[ -f /core_ws/install/setup.zsh ] && source /core_ws/install/setup.zsh
+
 # --- Consumer Workspace Overlay (auto-source if built) ---
-if [ -f /workspace/install/setup.zsh ]; then
-  source /workspace/install/setup.zsh
-fi
+[ -f /workspace/install/setup.zsh ] && source /workspace/install/setup.zsh
 
 # --- Zsh History Settings ---
 export HISTFILE=/root/.zsh_history_dir/.zsh_history

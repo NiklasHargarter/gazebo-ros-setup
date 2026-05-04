@@ -2,18 +2,17 @@ services:
   core:
     image: project-core:${ROS_DISTRO:-humble}
     container_name: ros-core
-    # Replace with the real launch command once core_bringup exists:
-    #   command: ros2 launch core_bringup sim.launch.py
-    command: /bin/bash
+    command: /bin/zsh
     stdin_open: true
     tty: true
     environment:
       - DISPLAY=${DISPLAY}
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./.zsh_history_dir:/root/.zsh_history_dir
     network_mode: host
 
-  # Consumer service template — add a block like this for each consumer.
+  # Add a block like this for each consumer.
   # Build the consumer image first (FROM project-core in its Dockerfile), then:
   #   docker compose --profile <name> up
   consumer-example:
@@ -27,5 +26,6 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ./.zsh_history_dir:/root/.zsh_history_dir
+      - ./workspace:/workspace
     network_mode: host
     profiles: [example]

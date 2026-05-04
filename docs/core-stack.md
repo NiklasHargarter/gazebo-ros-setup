@@ -3,35 +3,20 @@ title: Core stack
 nav_order: 6
 ---
 
-# Core ROS / Gazebo stack
+# Core stack
 
-The container mounts two workspaces on top of the `project-core` image:
+Core ROS packages are baked into `project-core` at image-build time. No
+runtime bind-mount of core source.
 
-1. `/core_ws` — the shared core stack (this repo's `core_ws/`)
-2. `/workspace` — the consumer's own packages (this repo's `workspace/`)
-
-Both overlay `/opt/ros/${ROS_DISTRO}` and are auto-sourced in new shells.
-
-For the bigger picture (base / core / consumer image layers), see
-[Architecture](architecture.md).
-
-## Clone the core source
-
-The core stack consists of three repos. From the repo root on the host:
+## Clone core source
 
 ```bash
 git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
-git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
-git clone https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
-cd core_ws/src/turtlebot3_manipulation && git checkout humble && cd -
 ```
 
-`core_ws/src/` is gitignored, so these clones won't pollute this repo.
+`core_ws/src/*` is gitignored.
 
 ## Build the core image
-
-Core's apt/rosdep deps are baked into a local image via `core.Dockerfile`
-(no published image — partners build it themselves):
 
 ```bash
 docker build -f core.Dockerfile \
@@ -39,17 +24,21 @@ docker build -f core.Dockerfile \
              --build-arg ROS_DISTRO=${ROS_DISTRO:-humble} .
 ```
 
-Rerun this only when core deps change.
+Build steps inside the image:
 
-## Build the core workspace
+1. Install apt deps from `core.Dockerfile`.
+2. `COPY core_ws/src → /tmp/core_build/src`.
+3. `rosdep install` for any package.xml found.
+4. `colcon build --merge-install --install-base /opt/ros_overlay`.
 
-Inside the container:
+Result: `/opt/ros_overlay/setup.bash` (auto-sourced in shells).
 
-```bash
-cd /core_ws
-rosdep update
-rosdep install --from-paths src --ignore-src -y
-colcon build --merge-install
-```
+## Rebuild triggers
 
-Open a new shell (or `source /core_ws/install/setup.zsh`) to pick it up.
+Rebuild the core image when:
+
+- core apt deps change (`core.Dockerfile`)
+- core source under `core_ws/src/` changes
+- ROS distro changes
+
+Editing core source on the host has **no runtime effect** without a rebuild.

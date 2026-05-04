@@ -1,38 +1,35 @@
 # Consumer template
 
-Skeleton for a new consumer (e.g. a VLA model, a perception node, a planner)
-that runs against the project core stack.
-
-## How a consumer fits in
+Skeleton for a consumer service that runs against `project-core`.
 
 ```
-base image (this repo, Dockerfile)         — ROS + zsh, generic
-  └── project-core (this repo, core.Dockerfile) — adds core deps. Built locally.
-        └── your consumer (this Dockerfile)     — adds your AI/CV deps. Built locally.
+osrf/ros:${ROS_DISTRO}-desktop-full
+  └── project-core      (this repo, core.Dockerfile)
+        └── your consumer  (this Dockerfile, FROM project-core)
 ```
-
-Source code (core repo, your consumer repo) is bind-mounted at runtime, not
-baked into images.
 
 ## Setup
 
-1. Copy this directory into your consumer repo, or use it as a starting point
-   in place.
-2. Edit `Dockerfile` to install your consumer's deps.
-3. Build it locally:
+1. Copy this directory into your consumer repo (or edit in place).
+2. Edit `Dockerfile` to add your apt / pip deps. The opinionated zsh block
+   is enabled by default — strip it for minimal/headless consumers and
+   switch the compose `command:` to `/bin/bash`.
+3. Build:
 
    ```bash
    docker build -t my-consumer:humble \
-                --build-arg ROS_DISTRO=humble \
-                .
+                --build-arg ROS_DISTRO=humble .
    ```
 
-4. From the dev-container repo, set `CONSUMER_IMAGE=my-consumer:humble` in
-   `.env`, then `docker compose up`.
+4. Add a service block in `docker-compose.yml` (copy `consumer-example`),
+   point it at your image, give it a unique `profiles:` name, then:
 
-## Where your code goes
+   ```bash
+   docker compose --profile <name> up -d
+   ```
 
-Your consumer's ROS packages get bind-mounted into `/workspace/src/` inside
-the container. Clone your repo into `workspace/src/<your-pkg>/` (or symlink),
-then build with `colcon build` inside the container. The build overlays on
-top of the core workspace automatically.
+## Source layout
+
+Consumer packages live in `./workspace/src/<your-pkg>/` (host) and are
+bind-mounted to `/workspace/src/` (container). See
+[Writing your own nodes](../docs/writing-your-own-nodes.md).

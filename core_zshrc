@@ -1,0 +1,10 @@
+source /opt/ros/${ROS_DISTRO}/setup.zsh
+source /core_ws/install/setup.zsh
+
+export HISTFILE=/root/.zsh_history_dir/.zsh_history
+export HISTSIZE=10000
+export SAVEHIST=10000
+setopt appendhistory sharehistory incappendhistory
+
+alias ll='ls -la'
+alias launch='ros2 launch hugo_moveit_config mobile_base_gazebo.launch.py'
