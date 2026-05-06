@@ -84,8 +84,8 @@ EOF
 }
 
 ros-compose()  { _ros_compose "$@"; }
-ros-up()       { _ros_compose up "$@"; }
-ros-upd()      { _ros_compose up -d "$@"; }
+ros-up()       { xhost +local:docker 2>/dev/null; _ros_compose up "$@"; }
+ros-upd()      { xhost +local:docker 2>/dev/null; _ros_compose up -d "$@"; }
 ros-down()     { _ros_compose down "$@"; }
 ros-restart()  { _ros_compose restart "${@:-$_ros_service}"; }
 ros-logs()     { _ros_compose logs "${@:--f}"; }

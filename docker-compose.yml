@@ -1,6 +1,11 @@
 services:
   core:
     image: project-core:${ROS_DISTRO:-humble}
+    build:
+      context: .
+      dockerfile: core.Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-humble}
     container_name: ros-core
     command: /bin/zsh
     stdin_open: true
@@ -10,6 +15,7 @@ services:
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ./.zsh_history_dir:/root/.zsh_history_dir
+      - ./core_ws:/core_ws
     network_mode: host
 
   # Add a block like this for each consumer.

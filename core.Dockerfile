@@ -19,13 +19,9 @@ RUN apt-get update && apt-get install -y \
     ros-${ROS_DISTRO}-gz-ros2-control \
     && rm -rf /var/lib/apt/lists/*
 
-COPY core_ws/src/ /core_ws/src/
-
-WORKDIR /core_ws
-
-RUN . /opt/ros/${ROS_DISTRO}/setup.sh \
-    && colcon build
-
 COPY core_zshrc /root/.zshrc
+COPY core_entrypoint.sh /core_entrypoint.sh
+RUN chmod +x /core_entrypoint.sh
 
+ENTRYPOINT ["/core_entrypoint.sh"]
 CMD ["/bin/zsh"]

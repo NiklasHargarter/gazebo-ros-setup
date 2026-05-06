@@ -22,15 +22,15 @@ Source layering inside the consumer container (auto-sourced in shells):
 
 ```
 /opt/ros/${ROS_DISTRO}     base ROS
-/opt/ros_overlay           core (baked into project-core)
+/core_ws/install           core workspace (sourced if built)
 /workspace/install         your packages (sourced if built)
 ```
 
 ## Create a package
 
 ```bash
-docker compose --profile example up -d
-docker compose exec consumer-example zsh
+ros-upd --profile example
+ros-exec consumer-example
 cd /workspace/src
 ros2 pkg create --build-type ament_python my_package --node-name my_node
 ```
@@ -58,7 +58,7 @@ ros2 run my_package my_node
 ## Verify from another shell
 
 ```bash
-docker compose exec core bash
+ros-zsh
 ros2 topic echo /my_topic
 ```
 

@@ -5,40 +5,43 @@ nav_order: 6
 
 # Core stack
 
-Core ROS packages are baked into `project-core` at image-build time. No
-runtime bind-mount of core source.
+The core image contains apt dependencies and a sourcing entrypoint. The workspace source lives on the host under `core_ws/src/` and is bind-mounted into `/core_ws` at runtime — build artifacts stay on the host and are visible outside the container.
 
 ## Clone core source
 
 ```bash
+git clone --branch 0.0.3 https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
+git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
 git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
+git -C core_ws/src/hugo_moveit_config checkout 3eb7c8d5c756bfa08947a4466f68e6737e1d368d
 ```
 
-`core_ws/src/*` is gitignored.
+`core_ws/src/*` is gitignored. `robotis_hand` must be pinned to `0.0.3` — newer versions have a broken dependency chain.
 
 ## Build the core image
 
 ```bash
-docker build -f core.Dockerfile \
-             -t project-core:${ROS_DISTRO:-humble} \
-             --build-arg ROS_DISTRO=${ROS_DISTRO:-humble} .
+ros-build
 ```
 
-Build steps inside the image:
+This installs apt dependencies and sets up the entrypoint. It does **not** run `colcon build` — that happens inside the running container (see below).
 
-1. Install apt deps from `core.Dockerfile`.
-2. `COPY core_ws/src → /tmp/core_build/src`.
-3. `rosdep install` for any package.xml found.
-4. `colcon build --merge-install --install-base /opt/ros_overlay`.
+## Build the workspace (first time)
 
-Result: `/opt/ros_overlay/setup.bash` (auto-sourced in shells).
+```bash
+ros-upd          # start the container
+ros-zsh          # open a shell
+cd /core_ws && colcon build
+exit
+ros-restart      # restart so the entrypoint picks up install/
+```
+
+After this, `core_ws/build/` and `core_ws/install/` exist on the host. Every subsequent `ros-upd` sources the workspace automatically.
 
 ## Rebuild triggers
 
-Rebuild the core image when:
-
-- core apt deps change (`core.Dockerfile`)
-- core source under `core_ws/src/` changes
-- ROS distro changes
-
-Editing core source on the host has **no runtime effect** without a rebuild.
+| What changed | Action |
+|---|---|
+| apt deps in `core.Dockerfile` | `ros-build` |
+| Core source under `core_ws/src/` | `ros-zsh` → `colcon build` |
+| ROS distro | Update `.env`, then `ros-build` + rebuild workspace |

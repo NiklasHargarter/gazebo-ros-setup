@@ -26,54 +26,44 @@ After the "Docker non-root" step, **log out and back in** (or reboot). `newgrp d
 
 ---
 
-## 2. Clone this repo
+## 2. Clone this repo and set up shell shortcuts
 
 ```bash
 git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
 ```
 
+Add to your `~/.zshrc` (or `~/.bashrc`):
+
+```bash
+export ROS_SETUP_DIR="$HOME/gazebo-ros-setup"
+source "$ROS_SETUP_DIR/shell/ros-shortcuts.sh"
+```
+
+Reload your shell:
+
+```bash
+source ~/.zshrc
+```
+
+Run `ros-help` to see all available commands.
+
 ---
 
 ## 3. Clone the core source
 
 ```bash
+git clone --branch 0.0.3 https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
+git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
 git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
+git -C core_ws/src/hugo_moveit_config checkout 3eb7c8d5c756bfa08947a4466f68e6737e1d368d
 ```
 
-`core_ws/src/` is gitignored.
+`core_ws/src/*` is gitignored. `robotis_hand` must be pinned to `0.0.3` — newer versions have a broken dependency chain.
 
 ---
 
-## 4. Build the project-core image
-
-Core's apt deps and source packages are baked into a local image. No published image exists — every machine builds it once:
-
-```bash
-docker build -f core.Dockerfile \
-             -t project-core:humble \
-             --build-arg ROS_DISTRO=humble .
-```
-
-Only rerun this when core *dependencies* change (new apt package, new ROS package dep) or when the core source itself changes. Rebuilding is the one step to pick up core changes.
-
----
-
-## 5. Build your consumer image
-
-Your consumer image extends `project-core` with your own deps (AI/CV libraries, custom apt packages, etc.). The `consumer-template/` directory is a starting point:
-
-```bash
-docker build -t my-consumer:humble \
-             --build-arg ROS_DISTRO=humble \
-             consumer-template/
-```
-
-Edit `consumer-template/Dockerfile` to add your deps before building.
-
----
-
-## 6. Configure `.env`
+## 4. Configure `.env`
 
 ```bash
 cp .env.example .env
@@ -87,115 +77,94 @@ ROS_DISTRO=humble
 
 ---
 
-## 7. Start the stack
-
-Allow Docker to open windows on your screen:
+## 5. Build the core image
 
 ```bash
-xhost +local:docker
+ros-build
 ```
 
-Start core. **Pick one** based on whether you have an NVIDIA GPU.
+This installs apt dependencies and sets up the entrypoint. Only rerun when apt dependencies or the `core.Dockerfile` change.
 
-Without NVIDIA GPU (CPU / Intel / Mesa):
+---
+
+## 6. Start the stack
 
 ```bash
-docker compose up -d
+ros-upd
 ```
 
-With NVIDIA GPU:
+X11 passthrough is granted automatically. For NVIDIA GPU:
 
 ```bash
-docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
-```
-
-Start a consumer (optional):
-
-```bash
-docker compose --profile example up -d
+ros-profile nvidia
+ros-upd
 ```
 
 ---
 
-## 8. Open a shell in core
+## 7. Build the workspace (first time only)
 
 ```bash
-docker compose exec core bash
+ros-zsh
+cd /core_ws && colcon build
+exit
+ros-restart
 ```
+
+Build artifacts appear in `core_ws/build/` and `core_ws/install/` on the host. Every subsequent `ros-upd` sources the workspace automatically — no manual `source` call needed.
 
 ---
 
-## 9. Verify ROS 2
-
-Inside the container:
+## 8. Launch the simulation
 
 ```bash
+ros-zsh
+launch
+```
+
+Gazebo and RViz should open with the robot loaded. Ctrl-C to stop.
+
+---
+
+## 9. Verify ROS 2 topics
+
+With the simulation running, open a second shell:
+
+```bash
+ros-zsh
 ros2 topic list
 ```
 
-Expected:
-
-```
-/parameter_events
-/rosout
-```
+You should see topics including `/joint_states`, `/tf`, `/clock`, and the controller topics.
 
 ---
 
-## 10. Launch the HuGO simulation
-
-Confirms the simulator starts, the GUI passes through X11, and the full core stack comes up:
+## 10. Shut down
 
 ```bash
-ros2 launch hugo_moveit_config gezebo.launch.py
-```
-
-Gazebo and RViz should open with the HuGO robot loaded. Ctrl-C to stop.
-
----
-
-## 11. Verify ROS 2 topics
-
-With the simulation running, open a **second** shell:
-
-```bash
-docker compose exec core bash
-ros2 topic list
-```
-
-You should see topics including `/joint_states`, `/tf`, `/clock`, and the controller topics. A populated topic list confirms the bridge and ros2_control stack are running end to end.
-
----
-
-## 12. Shut down
-
-```bash
-docker compose down
+ros-down
 ```
 
 ---
 
 ## Common commands
 
-Rebuild the core image after a change:
-
-```bash
-docker build -f core.Dockerfile -t project-core:humble --build-arg ROS_DISTRO=humble .
-```
-
-Build your consumer workspace packages (run inside a consumer container):
-
-```bash
-cd /workspace
-colcon build --symlink-install
-```
+| Command | What it does |
+|---|---|
+| `ros-upd` | Start the stack detached |
+| `ros-zsh` | Shell into core |
+| `ros-exec <service>` | Shell into any service |
+| `ros-build` | Rebuild the core image |
+| `ros-restart` | Restart the core container |
+| `ros-down` | Stop and remove the stack |
+| `ros-help` | Full command reference |
 
 ---
 
 ## Next steps
 
 - [Architecture](architecture) — full picture of the core / consumer image layers
-- [Core Stack](core-stack) — building and iterating on the core image
+- [Core Stack](core-stack) — building and iterating on the core workspace
 - [Writing Your Own Nodes](writing-your-own-nodes) — adding consumer packages
 - [Remote GUI Client](server-client) — split simulation from GUI across machines
 - [Headless Rendering](headless-rendering) — run on a server with no display

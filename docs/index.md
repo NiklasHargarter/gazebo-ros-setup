@@ -19,12 +19,12 @@ Two Docker image layers, both built locally on every machine (nothing with priva
 ```
 osrf/ros:humble-desktop-full         ← upstream, pulled once and cached
   └── project-core  (core.Dockerfile)
-        ← core apt deps + core source baked in at build time
+        ← core apt deps + entrypoint that auto-sources the workspace
         └── your consumer  (your own Dockerfile, FROM project-core)
               ← your deps (AI/CV libraries, custom apt packages, ...)
 ```
 
-Core is baked into `project-core` at build time — no source bind-mounts at runtime. Consumers inherit everything from `project-core` and only need to add their own dependencies.
+The core workspace source lives on the host under `core_ws/` and is bind-mounted at runtime — build artifacts are visible outside the container. Consumers inherit the entrypoint from `project-core` and only need to add their own dependencies.
 
 Core and consumers run as **separate containers** in one compose stack. They communicate over ROS topics/services/actions via host network (DDS discovery handles the rest):
 
