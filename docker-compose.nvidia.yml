@@ -2,3 +2,11 @@ services:
   core:
     devices:
       - nvidia.com/gpu=all
+
+  camera-consumer:
+    devices:
+      - nvidia.com/gpu=all
+
+  consumer-template:
+    devices:
+      - nvidia.com/gpu=all
