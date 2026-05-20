@@ -14,12 +14,18 @@ _site/
 .bundle/
 vendor/
 
-# Ignore colcon build artefacts but keep workspace/src tracked (with .gitkeep)
+# Ignore colcon build artefacts but keep workspace/src tracked (with .gitkeep
+# plus first-party reference packages that ship with the repo)
 workspace/build/
 workspace/install/
 workspace/log/
 workspace/src/*
 !workspace/src/.gitkeep
+!workspace/src/consumer_template/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
 
 # Core stack is cloned in by each user; never commit it or its build output
 core_ws/build/
@@ -30,3 +36,6 @@ core_ws/src/*
 
 # Ignore the history file itself, but keep the mount-point directory
 .zsh_history_dir/.zsh_history
+
+# Local work plans / scratch notes, not for upstream
+tickets/

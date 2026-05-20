@@ -84,8 +84,33 @@ EOF
 }
 
 ros-compose()  { _ros_compose "$@"; }
-ros-up()       { xhost +local:docker 2>/dev/null; _ros_compose up "$@"; }
-ros-upd()      { xhost +local:docker 2>/dev/null; _ros_compose up -d "$@"; }
+
+# Split off --profile flags so they land before the subcommand (where
+# `docker compose` expects them), and forward the rest to `up`.
+_ros_split_profiles() {
+    profiles=()
+    rest=()
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --profile)     profiles+=("--profile" "$2"); shift 2 ;;
+            --profile=*)   profiles+=("$1"); shift ;;
+            *)             rest+=("$1"); shift ;;
+        esac
+    done
+}
+
+ros-up() {
+    xhost +local:docker 2>/dev/null
+    local profiles rest
+    _ros_split_profiles "$@"
+    _ros_compose "${profiles[@]}" up "${rest[@]}"
+}
+ros-upd() {
+    xhost +local:docker 2>/dev/null
+    local profiles rest
+    _ros_split_profiles "$@"
+    _ros_compose "${profiles[@]}" up -d "${rest[@]}"
+}
 ros-down()     { _ros_compose down "$@"; }
 ros-restart()  { _ros_compose restart "${@:-$_ros_service}"; }
 ros-logs()     { _ros_compose logs "${@:--f}"; }

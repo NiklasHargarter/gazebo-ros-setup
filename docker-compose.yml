@@ -16,7 +16,54 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix:rw
       - ./.zsh_history_dir:/root/.zsh_history_dir
       - ./core_ws:/core_ws
+      - ./ignition_pictures:/root/.ignition/gui/pictures
     network_mode: host
+    # Share /dev/shm with host so FastDDS shared-memory transport works
+    # across containers. Without this, discovery succeeds over UDP but no
+    # data flows because each container has its own /dev/shm.
+    ipc: host
+
+  camera-consumer:
+    image: camera-consumer:${ROS_DISTRO:-humble}
+    build:
+      context: ./camera-consumer
+      dockerfile: Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-humble}
+    container_name: ros-camera-consumer
+    command: /bin/zsh
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./.zsh_history_dir:/root/.zsh_history_dir
+      - ./workspace:/workspace
+    network_mode: host
+    ipc: host
+    profiles: [camera]
+
+  consumer-template:
+    image: consumer-template:${ROS_DISTRO:-humble}
+    build:
+      context: ./consumer-template
+      dockerfile: Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-humble}
+    container_name: ros-consumer-template
+    command: /bin/zsh
+    stdin_open: true
+    tty: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - ./.zsh_history_dir:/root/.zsh_history_dir
+      - ./workspace:/workspace
+    network_mode: host
+    ipc: host
+    profiles: [template]
 
   # Add a block like this for each consumer.
   # Build the consumer image first (FROM project-core in its Dockerfile), then:
@@ -34,4 +81,5 @@ services:
       - ./.zsh_history_dir:/root/.zsh_history_dir
       - ./workspace:/workspace
     network_mode: host
+    ipc: host
     profiles: [example]
