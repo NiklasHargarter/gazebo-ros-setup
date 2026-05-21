@@ -164,7 +164,6 @@ ros-down
 ## Next steps
 
 - [Architecture](architecture) — full picture of the core / consumer image layers
+- [Repo Tour](repo-tour) — one paragraph per file, what each is for
 - [Core Stack](core-stack) — building and iterating on the core workspace
 - [Writing Your Own Nodes](writing-your-own-nodes) — adding consumer packages
-- [Remote GUI Client](server-client) — split simulation from GUI across machines
-- [Headless Rendering](headless-rendering) — run on a server with no display

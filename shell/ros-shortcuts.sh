@@ -4,7 +4,7 @@
 #
 # All state lives in $ROS_SETUP_DIR/.env (the same file Docker Compose reads):
 #   ROS_DISTRO   humble | jazzy | ...                       (default: humble)
-#   ROS_PROFILE  base | nvidia | server | nvidia-server     (default: base)
+#   ROS_PROFILE  base | nvidia                              (default: base)
 #
 # Change values with `ros-distro NAME` / `ros-profile NAME`. Run `ros-help` for
 # the full command list.
@@ -43,14 +43,9 @@ _ros_compose_files() {
         base) ;;
         nvidia)
             files+=("-f" "$ROS_SETUP_DIR/docker-compose.nvidia.yml") ;;
-        server)
-            files+=("-f" "$ROS_SETUP_DIR/docker-compose.server.yml") ;;
-        nvidia-server|server-nvidia)
-            files+=("-f" "$ROS_SETUP_DIR/docker-compose.nvidia.yml")
-            files+=("-f" "$ROS_SETUP_DIR/docker-compose.server.yml") ;;
         *)
             echo "ros-shortcuts: unknown ROS_PROFILE '$profile' in $_ros_env_file" >&2
-            echo "               expected: base | nvidia | server | nvidia-server" >&2
+            echo "               expected: base | nvidia" >&2
             return 1 ;;
     esac
     printf '%s\n' "${files[@]}"
@@ -74,10 +69,11 @@ gazebo-ros-setup shortcuts  (ROS_DISTRO=$(_ros_get ROS_DISTRO humble)  ROS_PROFI
   ros-logs [args]          Tail logs (default: -f)
   ros-ps                   Show compose status
   ros-build                Rebuild the image
+  ros-ws-build             Rebuild /core_ws inside the container and restart core
   ros-run [cmd...]         One-off container via 'compose run --rm' (core)
   ros-compose ...          Raw 'docker compose' with current profile/distro
   ros-root                 cd into the gazebo-ros-setup repo
-  ros-profile NAME         Set profile (base|nvidia|server|nvidia-server) in .env
+  ros-profile NAME         Set profile (base|nvidia) in .env
   ros-distro NAME          Set ROS_DISTRO (humble|jazzy|...) in .env
   ros-help                 Show this help
 EOF
@@ -116,6 +112,10 @@ ros-restart()  { _ros_compose restart "${@:-$_ros_service}"; }
 ros-logs()     { _ros_compose logs "${@:--f}"; }
 ros-ps()       { _ros_compose ps "$@"; }
 ros-build()    { _ros_compose build "$@"; }
+ros-ws-build() {
+    _ros_compose exec "$_ros_service" /bin/zsh -ic "cd /core_ws && colcon build" \
+      && _ros_compose restart "$_ros_service"
+}
 ros-run()      { _ros_compose run --rm "$_ros_service" "$@"; }
 
 ros-zsh() {
@@ -126,7 +126,7 @@ ros-zsh() {
     fi
 }
 
-# Exec into any named service: ros-exec consumer-example  or  ros-exec consumer-example ros2 topic list
+# Exec into any named service: ros-exec consumer-template  or  ros-exec consumer-template ros2 topic list
 ros-exec() {
     local svc="${1:?usage: ros-exec SERVICE [cmd...]}"
     shift
@@ -142,7 +142,7 @@ ros-root() { cd "$ROS_SETUP_DIR" || return; }
 ros-profile() {
     if [ $# -ne 1 ]; then
         echo "current: ROS_PROFILE=$(_ros_get ROS_PROFILE base)"
-        echo "usage: ros-profile <base|nvidia|server|nvidia-server>"
+        echo "usage: ros-profile <base|nvidia>"
         return 1
     fi
     _ros_set ROS_PROFILE "$1"

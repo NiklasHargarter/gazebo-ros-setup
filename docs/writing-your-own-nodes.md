@@ -21,28 +21,32 @@ ros-exec consumer-template "ros2 run consumer_template drive_square --ros-args -
 
 Captured from a live `mobile_manipulation_gazebo.launch.py` session.
 
+Delivery defaults follow ROS conventions — sensor streams are best-effort,
+commands and latched topics are reliable. See **Quality of Service** below for
+the few cases that need explicit attention.
+
 ### Topics consumers subscribe to
 
-| Topic | Type | QoS | Purpose |
-| --- | --- | --- | --- |
-| `/camera/rgb/image_raw` | `sensor_msgs/msg/Image` | `qos_profile_sensor_data` | RGB camera frame |
-| `/camera/rgb/camera_info` | `sensor_msgs/msg/CameraInfo` | `qos_profile_sensor_data` | Camera intrinsics |
-| `/scan` | `sensor_msgs/msg/LaserScan` | `qos_profile_sensor_data` | 2D lidar |
-| `/scan/points` | `sensor_msgs/msg/PointCloud2` | `qos_profile_sensor_data` | 2D lidar as PointCloud2 |
-| `/imu` | `sensor_msgs/msg/Imu` | `qos_profile_sensor_data` | IMU |
-| `/joint_states` | `sensor_msgs/msg/JointState` | reliable, depth 10 | All joints, simulated |
-| `/odom` | `nav_msgs/msg/Odometry` | reliable, depth 10 | Diff-drive odometry |
-| `/tf` | `tf2_msgs/msg/TFMessage` | reliable, depth 100 | Dynamic transforms |
-| `/tf_static` | `tf2_msgs/msg/TFMessage` | reliable, **transient_local** | Static transforms — set durability or you'll miss them |
-| `/map` | `nav_msgs/msg/OccupancyGrid` | reliable, **transient_local** | Nav2 static map |
+| Topic | Type | Purpose |
+| --- | --- | --- |
+| `/camera/rgb/image_raw` | `sensor_msgs/msg/Image` | RGB camera frame |
+| `/camera/rgb/camera_info` | `sensor_msgs/msg/CameraInfo` | Camera intrinsics |
+| `/scan` | `sensor_msgs/msg/LaserScan` | 2D lidar |
+| `/scan/points` | `sensor_msgs/msg/PointCloud2` | 2D lidar as PointCloud2 |
+| `/imu` | `sensor_msgs/msg/Imu` | IMU |
+| `/joint_states` | `sensor_msgs/msg/JointState` | All joints, simulated |
+| `/odom` | `nav_msgs/msg/Odometry` | Diff-drive odometry |
+| `/tf` | `tf2_msgs/msg/TFMessage` | Dynamic transforms |
+| `/tf_static` | `tf2_msgs/msg/TFMessage` | Static transforms (latched — see QoS below) |
+| `/map` | `nav_msgs/msg/OccupancyGrid` | Nav2 static map (latched — see QoS below) |
 
 ### Topics consumers publish
 
-| Topic | Type | QoS | Purpose |
-| --- | --- | --- | --- |
-| `/cmd_vel` | `geometry_msgs/msg/Twist` | reliable, depth 10 | Base velocity command |
-| `/goal_pose` | `geometry_msgs/msg/PoseStamped` | reliable, depth 10 | Quick Nav2 goal (RViz-style) |
-| `/initialpose` | `geometry_msgs/msg/PoseWithCovarianceStamped` | reliable, depth 10 | Reset localization |
+| Topic | Type | Purpose |
+| --- | --- | --- |
+| `/cmd_vel` | `geometry_msgs/msg/Twist` | Base velocity command |
+| `/goal_pose` | `geometry_msgs/msg/PoseStamped` | Quick Nav2 goal (RViz-style) |
+| `/initialpose` | `geometry_msgs/msg/PoseWithCovarianceStamped` | Reset localization |
 
 ### Action servers
 
@@ -71,7 +75,10 @@ Controllers are named the way MoveIt expects:
 `left_hand_controller`, `right_hand_controller`, plus
 `diff_drive_controller` and `imu_broadcaster`.
 
-## QoS conventions
+## Quality of Service
+
+ROS 2 lets the publisher and subscriber disagree on delivery semantics, and
+when they do, no data flows. Three rules cover everything in the tables above:
 
 - **Sensors** (camera, lidar, IMU): `qos_profile_sensor_data` —
   best-effort, depth 5. Required to match the publisher.
@@ -82,7 +89,7 @@ Controllers are named the way MoveIt expects:
 
 **QoS mismatch is the #1 reason a topic shows up in `ros2 topic list`
 but your callback never fires.** If `ros2 topic echo` works but your
-node sees nothing, check QoS first.
+node sees nothing, check delivery semantics first.
 
 ## Pattern: subscribe to a camera frame
 

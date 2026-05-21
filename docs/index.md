@@ -33,12 +33,11 @@ docker compose up -d                        # core only
 docker compose --profile camera up -d       # core + consumer-camera
 ```
 
-Optional compose overlay files add GPU or server-client support without touching the base file:
+An optional compose overlay adds GPU support without touching the base file:
 
 ```bash
 docker compose up                                                          # CPU / Mesa
 docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up      # NVIDIA GPU
-docker compose -f docker-compose.yml -f docker-compose.server.yml up      # remote GUI server
 ```
 
 ---
@@ -48,13 +47,11 @@ docker compose -f docker-compose.yml -f docker-compose.server.yml up      # remo
 | Goal | Start here |
 |---|---|
 | Set up this project on a new machine | [Quickstart](quickstart) |
-| I'm on macOS | [macOS Setup](macos-setup) |
 | Understand the core / consumer image layers | [Architecture](architecture) |
 | Build or rebuild the core image | [Core Stack](core-stack) |
 | Add consumer packages | [Writing Your Own Nodes](writing-your-own-nodes) |
-| Split the GUI from the simulation across two machines | [Remote GUI Client](server-client) |
-| Run Gazebo on a headless server (no display) | [Headless Rendering](headless-rendering) |
 | See what's inside the `desktop-full` base image | [Desktop Full Contents](desktop-full-contents) |
+| Tour every file in the repo | [Repo Tour](repo-tour) |
 
 ---
 

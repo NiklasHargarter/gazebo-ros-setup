@@ -13,6 +13,9 @@ osrf/ros:humble-desktop-full         ← upstream, pulled once
 Core runs the robot and simulation. Consumers connect over ROS topics/services/actions via host network.
 The `core_ws` is bind-mounted from the host so build artifacts are visible outside the container.
 
+For a paragraph-per-file map of what's in this repo and why, see
+[`docs/repo-tour.md`](docs/repo-tour.md).
+
 ## Shell shortcuts
 
 The repo ships a set of `ros-*` shortcuts that wrap `docker compose` with the right files and options.
@@ -25,81 +28,67 @@ source "$ROS_SETUP_DIR/shell/ros-shortcuts.sh"
 
 Then reload your shell (`source ~/.zshrc`). Run `ros-help` to see all available commands.
 
-## Setup (new machine)
+## Workflows
 
+### Fresh install
 ```bash
-# 1. Clone this repo
 git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
+bin/setup-core-ws.sh    # clones the three source repos into core_ws/src/
+ros-build               # build the core image
+ros-upd                 # start the stack
+ros-ws-build            # build the workspace inside the container
+ros-zsh                 # shell in, then `launch` to run the sim
+```
 
-# 2. Clone core source into core_ws/src/
-#    robotis_hand must be pinned to 0.0.3 — newer versions have a broken dep chain
-git clone --branch 0.0.3 https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
-git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
-git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
-git -C core_ws/src/hugo_moveit_config checkout 3eb7c8d5c756bfa08947a4466f68e6737e1d368d
-
-# 3. Build the core image (installs apt deps, sets up entrypoint)
-ros-build
-
-# 4. Start the container (also grants X11 access automatically)
-ros-upd
-
-# 5. First time only — build the workspace inside the container
-ros-zsh
-cd /core_ws && colcon build
-exit
-
-# 6. Restart so the entrypoint picks up the built workspace
-ros-restart
-
-# 7. Shell in and launch the sim
-ros-zsh
+### Daily run
+```bash
+ros-upd && ros-zsh
 launch   # alias for: ros2 launch hugo_moveit_config mobile_manipulation_gazebo.launch.py
 ```
 
-After the first `colcon build`, build artifacts live in `core_ws/build/` and `core_ws/install/` on the host.
-Every subsequent `ros-upd` sources the workspace automatically — no manual `source` call needed.
-
-## Day-to-day
-
+### After editing core_ws source
 ```bash
-ros-upd          # start the stack
-ros-zsh          # shell into core (workspace already sourced)
-launch           # run the sim
-ros-down         # stop the stack
+ros-ws-build
 ```
 
-## Adding a consumer
-
+### Update hugo to a new pinned SHA
+After someone bumps the SHA in `bin/setup-core-ws.sh`:
 ```bash
-# 1. Build your consumer image (use consumer-template/ as a starting point)
-docker build -t my-consumer:humble --build-arg ROS_DISTRO=humble consumer-template/
-
-# 2. Add a service block in docker-compose.yml (copy the consumer-example block),
-#    set image: my-consumer:humble and give it a unique profiles: name.
-
-# 3. Start core + consumer together
-ros-upd --profile example
-
-# 4. Shell into the consumer
-ros-exec consumer-example
+cd core_ws/src/hugo_moveit_config
+git fetch && git checkout <new-sha>
+ros-ws-build
 ```
 
-The consumer inherits the entrypoint from `project-core` so its shell is sourced automatically.
-Connect to the running sim over ROS topics — no extra network configuration needed.
+### Work on hugo locally
+```bash
+cd core_ws/src/hugo_moveit_config
+git checkout my-branch
+# edit, then:
+ros-ws-build
+```
 
-## Rebuilding
-
-Rebuild the core image whenever apt deps change:
-
+### Rebuild the core image (after apt-dep changes)
 ```bash
 ros-build
 ```
 
-Rebuild the workspace inside the container whenever source files change:
-
+### Nuke and start over
 ```bash
-ros-zsh
-cd /core_ws && colcon build
+ros-down
+rm -rf core_ws/build core_ws/install core_ws/log
+ros-build --no-cache
+ros-upd
+ros-ws-build
 ```
+
+### Run the example consumer
+`consumer-template/` is a working starting point:
+```bash
+ros-upd --profile template
+ros-exec consumer-template "cd /workspace && colcon build --symlink-install"
+ros-exec consumer-template ros2 run consumer_template echo_camera
+```
+
+For the full topic / action contract and how to add your own consumer, see
+[`docs/writing-your-own-nodes.md`](docs/writing-your-own-nodes.md).

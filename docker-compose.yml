@@ -43,22 +43,27 @@ services:
     network_mode: host
     ipc: host
     profiles: [template]
+  # Add another consumer by duplicating the consumer-template block,
+  # swapping image/container_name, and giving it a unique profiles: name.
+  # See docs/writing-your-own-nodes.md.
 
-  # Add a block like this for each consumer.
-  # Build the consumer image first (FROM project-core in its Dockerfile), then:
-  #   docker compose --profile <name> up
-  consumer-example:
-    image: my-consumer:${ROS_DISTRO:-humble}
-    container_name: ros-consumer-example
-    command: /bin/zsh
-    stdin_open: true
-    tty: true
+  # Optional shared infra. Enable with `--profile postgres`. Listens on the
+  # host's port 5432; any container with network_mode: host connects via
+  # localhost. Data persists in the postgres_data named volume.
+  # Example of "shared infra we run if a team needs it" — add redis, mqtt,
+  # etc. the same way.
+  postgres:
+    image: postgres:16
+    container_name: ros-postgres
+    profiles: [postgres]
     environment:
-      - DISPLAY=${DISPLAY}
+      POSTGRES_USER: ${POSTGRES_USER:-hugo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hugo}
+      POSTGRES_DB: ${POSTGRES_DB:-hugo}
     volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ./.zsh_history_dir:/root/.zsh_history_dir
-      - ./workspace:/workspace
+      - postgres_data:/var/lib/postgresql/data
     network_mode: host
-    ipc: host
-    profiles: [example]
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
