@@ -7,94 +7,76 @@ nav_order: 3
 
 ## What this repo is
 
-A **base station** for a multi-team robotics project: container, Gazebo simulation, robot description, and one working consumer as reference. Other teams bring their own code in their own repos and connect over ROS topics, services, and actions.
+A **base station** for a multi-team robotics project: it runs the container,
+Gazebo simulation, robot description, and integrated launch. That's the scope —
+it gets the robot + sim up. Other teams bring their own code in their own repos
+and connect over ROS topics, services, and actions on the host network. How
+they run that code — container or native, however built — is their call.
 
 ## Teams
 
 | Contributor | Focus | Repo |
 |---|---|---|
-| **Sim team** (this repo) | Base container, Gazebo world, integrated launch, contract surface | `gazebo-ros-setup` |
+| **Sim team** (this repo) | Base container, Gazebo world, integrated launch | `gazebo-ros-setup` |
 | **Robotics team** | Robot itself: URDF/Xacro, controllers, hardware drivers, ROS↔Gazebo bridge | `hugo_moveit_config` |
 | **CAU Kiel** | Visual perception, gesture/object recognition, social navigation | own repo |
 | **Uni Lübeck** | Cognition: situation understanding, task prediction, explainable plans | own repo |
 | **DFKI Lübeck** | LLM-based decision framework; integrates other AI outputs into robot actions | own repo |
 
-The robotics team did the initial Gazebo integration as a side-effect of their own testing; the sim is now this team's responsibility. Patches to `hugo_moveit_config` go upstream as branches/PRs there, not as local diffs in this repo.
+The robotics team did the initial Gazebo integration as a side-effect of their
+own testing; the sim is now this team's responsibility. Patches to
+`hugo_moveit_config` go upstream as branches/PRs there, not as local diffs here.
 
-## The interface contract
+## How teams talk
 
-Cross-team communication is ROS topics, services, and actions. The current contract is in [Writing Your Own Nodes](writing-your-own-nodes#what-ros-core-publishes) — name, type, QoS, purpose. If a topic isn't in that table, it isn't part of the contract yet.
+Cross-team communication is ROS topics, services, and actions — all stock
+message types (`sensor_msgs`, `geometry_msgs`, `nav_msgs`, `vision_msgs`, …).
+No shared interfaces package; we'll add one if something genuinely cross-cutting
+shows up. See [Topics](topics) for what the sim exposes.
 
-All cross-team types today are stock ROS messages (`sensor_msgs`, `geometry_msgs`, `nav_msgs`, `tf2_msgs`, `moveit_msgs`, `vision_msgs`). There is **no shared interfaces package** — nothing yet needs one. We'll create one if and when something genuinely cross-cutting appears.
+A few loose conventions, not rules — they just keep us from gluing mismatched
+topic names together at integration time. Ignore one if it gets in your way and
+tell the sim team.
 
-## Conventions
+- **Prefer stock message types.** Custom types live in your own
+  `<team>_interfaces` package; teams that subscribe pull your repo.
+- **Namespace topics by function** so two teams don't both publish `/objects`:
+  `/perception/...` (CAU Kiel), `/cognition/...` (Uni Lübeck),
+  `/decision/...` (DFKI Lübeck). Suggestions, not assignments.
+- **Mind QoS.** Sensor streams best-effort, commands reliable, latched topics
+  `transient_local`. Mismatch = topic visible but callback never fires.
 
-Recommendations, not rules. They exist so we don't have to glue mismatched topic names together at integration time. If a convention gets in the way of a team's work, ignore it and tell the sim team — guidelines that nobody follows are worse than no guidelines.
+## The core image
 
-**Prefer stock ROS message types.** `sensor_msgs/Image`, `vision_msgs/Detection3DArray`, `geometry_msgs/PoseStamped`, `nav_msgs/Odometry`, etc. cover almost every cross-team payload. Reach for a custom type only when nothing fits.
-
-**Custom types live in your own repo.** Put them in a `<team>_interfaces` package alongside your nodes. Other teams that subscribe pull your repo. Don't try to push types into this base repo unless multiple teams produce compatible payloads — then we promote into a small shared package.
-
-**Namespace topics by function.** Avoids accidental collisions:
-
-| Prefix | Producer | Examples |
-|---|---|---|
-| `/camera/...`, `/scan`, `/imu`, `/tf`, `/joint_states`, `/odom` | Sim | Sensor streams (established) |
-| `/cmd_vel`, `/move_action`, `/<part>_controller/...` | Consumer → robot | Robot commands (established) |
-| `/perception/...` | CAU Kiel (suggested) | Detections, gestures, faces |
-| `/cognition/...` | Uni Lübeck (suggested) | Situation labels, task predictions |
-| `/decision/...` | DFKI Lübeck (suggested) | High-level commands, action choices |
-
-The AI-team prefixes are suggestions, not assignments — pick what fits your nodes. They exist so two teams don't both publish on `/objects`.
-
-**QoS defaults.**
-- Sensor streams: `qos_profile_sensor_data` (best-effort, depth 5).
-- Commands: reliable, depth 10.
-- Latched-by-design (`/tf_static`, `/map`, anything published once): `transient_local`.
-
-QoS mismatch is the #1 reason a topic shows up in `ros2 topic list` but your callback never fires.
-
-**Document your topics.** When a new topic goes live, append one row to the contract table in [Writing Your Own Nodes](writing-your-own-nodes#what-ros-core-publishes): name, type, QoS, purpose. That table *is* the central registry.
-
-## How each team plugs in
-
-Every consumer follows the same pattern:
-
-1. Team repo sits alongside `gazebo-ros-setup` on the host.
-2. Their Dockerfile is `FROM project-core:${ROS_DISTRO}` — inherits ROS + apt deps.
-3. Compose declares `network_mode: host` and `ipc: host` — DDS discovery and FastDDS shared-memory transport work across containers.
-4. Nodes subscribe/publish against the contract.
-
-`consumer-template/` is a working starting point. Two patterns for dev without the live sim:
-
-## Runtime architecture
-
-Two locally-built image layers; nothing private is ever published:
+Locally built; the private source is never published:
 
 ```
 osrf/ros:${ROS_DISTRO}-desktop-full        upstream, pulled once
   └── project-core   (core.Dockerfile)     apt deps + entrypoint
-        └── your consumer  (your Dockerfile, FROM project-core)
 ```
 
-The core image holds apt deps and a sourcing entrypoint. The core workspace source is **not baked into the image** — it lives on the host under `core_ws/` and is bind-mounted at runtime. Build artifacts stay visible on the host.
+The core image holds apt deps and a sourcing entrypoint. The core workspace
+source is **not baked into the image** — it lives on the host under `core_ws/`
+and is bind-mounted at runtime, so build artifacts stay visible on the host.
+The entrypoint sources `/opt/ros/${ROS_DISTRO}/setup.bash` and, if present,
+`/core_ws/install/setup.bash` on every container start — no manual `source`.
 
-| Path | Origin | Mounted into |
-|---|---|---|
-| `/opt/ros/${ROS_DISTRO}` | upstream image | core, consumers |
-| `/core_ws` | host `./core_ws/` | core |
-| `/workspace` | host `./workspace/` | consumers |
+GPU access is layered on via `docker-compose.nvidia.yml`, enabled by default
+through `COMPOSE_FILE` in `.env`.
 
-The entrypoint sources `/opt/ros/${ROS_DISTRO}/setup.bash` and, if present, `/core_ws/install/setup.bash` on every container start. No manual `source` call needed.
+### Connecting your code
 
-### Containers and networking
+`docker-compose.yml` runs `core` on the **host network**. Your nodes reach it
+the same way — over ROS on the host network. Run them in a container with:
 
-`docker-compose.yml` runs `core` plus opt-in consumers via compose profiles. All containers use:
+- `network_mode: host` — DDS discovery works across processes/containers.
+- `ipc: host` — FastDDS shared-memory transport (`/dev/shm`) carries payloads.
+  Without it, discovery succeeds but no data flows.
 
-- `network_mode: host` — DDS discovery works across containers without extra config.
-- `ipc: host` — FastDDS's shared-memory transport (`/dev/shm`) actually carries payloads between containers. Without it, discovery succeeds but no data flows.
-
-GPU access is layered on via `docker-compose.nvidia.yml` (or `ros-profile nvidia` with the shortcuts).
+…or run them natively on the host. Either works; the sim doesn't care. You can
+build `FROM project-core` to inherit the ROS + apt deps, but nothing requires
+it. [`examples/perception-demo`](https://github.com/NiklasHargarter/gazebo-ros-setup/tree/main/examples/perception-demo)
+shows one container-based setup as reference.
 
 ## Per-machine setup
 

@@ -1,94 +1,79 @@
-# Reproducible ROS 2 + Gazebo dev environment
+# Reproducible ROS 2 + Gazebo robot + sim
 
-Two image layers, both built locally.
+Runs the robot and Gazebo Fortress sim (ROS 2 Humble) in Docker — no ROS on
+your host. That's the whole job of this repo.
+
+Your code talks to it over ROS on the **host network**: run your nodes however
+you like — a container with host networking from anywhere on your machine, or
+natively on the host. How your code gets built/containerised is up to you. The
+[`examples/`](examples) are reference, not a required pattern.
 
 ```
 osrf/ros:humble-desktop-full         ← upstream, pulled once
-  └── project-core  (core.Dockerfile)
-        ← apt deps, zsh shell, entrypoint that auto-sources the workspace
-        └── your consumer  (FROM project-core)
-              ← your deps, communicates over ROS topics
+  └── project-core  (core.Dockerfile) ← apt deps + entrypoint that auto-sources core_ws
 ```
 
-Core runs the robot and simulation. Consumers connect over ROS topics/services/actions via host network.
-The `core_ws` is bind-mounted from the host so build artifacts are visible outside the container.
+Core source isn't baked into the image — it's cloned into `core_ws/` on the
+host and bind-mounted at runtime, so build artifacts stay on the host.
 
-For a paragraph-per-file map of what's in this repo and why, see
-[`docs/repo-tour.md`](docs/repo-tour.md).
+Full docs: <https://niklashargarter.github.io/gazebo-ros-setup>
 
-## Shell shortcuts
+## Setup
 
-The repo ships a set of `ros-*` shortcuts that wrap `docker compose` with the right files and options.
-Add these two lines to your `~/.zshrc` (or `~/.bashrc`):
-
-```bash
-export ROS_SETUP_DIR="$HOME/gazebo-ros-setup"   # path to this repo
-source "$ROS_SETUP_DIR/shell/ros-shortcuts.sh"
-```
-
-Then reload your shell (`source ~/.zshrc`). Run `ros-help` to see all available commands.
-
-## Workflows
-
-### Fresh install
 ```bash
 git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
-bin/setup-core-ws.sh    # clones the three source repos into core_ws/src/
-ros-build               # build the core image
-ros-upd                 # start the stack
-ros-ws-build            # build the workspace inside the container
-ros-zsh                 # shell in, then `launch` to run the sim
+bin/install.sh        # wires ros-* shortcuts into your rc, offers to clone core source
 ```
 
-### Daily run
+`bin/install.sh` prints what it adds and asks first; `--print` edits nothing.
+It ends by dropping you into a fresh shell with the `ros-*` shortcuts loaded.
+See [docs/quickstart.md](docs/quickstart.md) for the full step-by-step (Docker
+prereqs, NVIDIA, first build).
+
+## Daily run
+
 ```bash
 ros-upd && ros-zsh
-launch   # alias for: ros2 launch hugo_moveit_config mobile_manipulation_gazebo.launch.py
+launch          # ros2 launch hugo_moveit_config mobile_manipulation_gazebo.launch.py
 ```
 
-### After editing core_ws source
+## Common commands
+
+| Command | What it does |
+|---|---|
+| `ros-upd` | Start core detached |
+| `ros-zsh [cmd]` | Shell into core (or run a command) |
+| `ros-ws-build` | `colcon build` core_ws, then restart core |
+| `ros-build` | Rebuild the core image (after apt-dep changes) |
+| `ros-restart` | Restart core |
+| `ros-down` | Stop and remove the stack |
+
+GPU overlay is on by default via `COMPOSE_FILE` in `.env` — drop `docker-compose.nvidia.yml` from that line if you have no NVIDIA GPU.
+
+After someone bumps the pinned SHA in `bin/setup-core-ws.sh`:
+
 ```bash
+cd core_ws/src/hugo_moveit_config && git fetch && git checkout <new-sha>
 ros-ws-build
 ```
 
-### Update hugo to a new pinned SHA
-After someone bumps the SHA in `bin/setup-core-ws.sh`:
-```bash
-cd core_ws/src/hugo_moveit_config
-git fetch && git checkout <new-sha>
-ros-ws-build
-```
+## Talking to the sim
 
-### Work on hugo locally
-```bash
-cd core_ws/src/hugo_moveit_config
-git checkout my-branch
-# edit, then:
-ros-ws-build
-```
+Anything that speaks ROS on the host network can drive the robot — see
+[docs/topics.md](docs/topics.md) for what's exposed. Run your nodes in a
+container (host networking + `ipc: host` for shared-memory transport) or
+natively; your choice.
 
-### Rebuild the core image (after apt-dep changes)
-```bash
-ros-build
-```
+[`examples/perception-demo`](examples/perception-demo) is one reference: a
+two-node consumer (YOLO-World detector + head tracker) as its own compose
+stack. It happens to build `FROM project-core`, but that's just convenient, not
+required.
 
-### Nuke and start over
 ```bash
-ros-down
-rm -rf core_ws/build core_ws/install core_ws/log
-ros-build --no-cache
-ros-upd
-ros-ws-build
+ros-upd                          # core
+cd examples/perception-demo
+docker compose build
+docker compose run --rm detector bash -c "cd /workspace && colcon build"
+docker compose up
 ```
-
-### Run the example consumer
-`consumer-template/` is a working starting point:
-```bash
-ros-upd --profile template
-ros-exec consumer-template "cd /workspace && colcon build --symlink-install"
-ros-exec consumer-template ros2 run consumer_template echo_camera
-```
-
-For the full topic / action contract and how to add your own consumer, see
-[`docs/writing-your-own-nodes.md`](docs/writing-your-own-nodes.md).

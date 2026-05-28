@@ -22,48 +22,5 @@ services:
     # across containers. Without this, discovery succeeds over UDP but no
     # data flows because each container has its own /dev/shm.
     ipc: host
-
-  consumer-template:
-    image: consumer-template:${ROS_DISTRO:-humble}
-    build:
-      context: ./consumer-template
-      dockerfile: Dockerfile
-      args:
-        ROS_DISTRO: ${ROS_DISTRO:-humble}
-    container_name: ros-consumer-template
-    command: /bin/zsh
-    stdin_open: true
-    tty: true
-    environment:
-      - DISPLAY=${DISPLAY}
-    volumes:
-      - /tmp/.X11-unix:/tmp/.X11-unix:rw
-      - ./.zsh_history_dir:/root/.zsh_history_dir
-      - ./workspace:/workspace
-    network_mode: host
-    ipc: host
-    profiles: [template]
-  # Add another consumer by duplicating the consumer-template block,
-  # swapping image/container_name, and giving it a unique profiles: name.
-  # See docs/writing-your-own-nodes.md.
-
-  # Optional shared infra. Enable with `--profile postgres`. Listens on the
-  # host's port 5432; any container with network_mode: host connects via
-  # localhost. Data persists in the postgres_data named volume.
-  # Example of "shared infra we run if a team needs it" — add redis, mqtt,
-  # etc. the same way.
-  postgres:
-    image: postgres:16
-    container_name: ros-postgres
-    profiles: [postgres]
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-hugo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hugo}
-      POSTGRES_DB: ${POSTGRES_DB:-hugo}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    network_mode: host
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
+  # Consumers run as their own compose stack against this core over ROS
+  # topics — see examples/perception-demo for a working two-node consumer.

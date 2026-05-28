@@ -2,7 +2,12 @@ services:
   core:
     devices:
       - nvidia.com/gpu=all
-
-  consumer-template:
-    devices:
-      - nvidia.com/gpu=all
+    # Force hardware GL onto the NVIDIA GPU. Without these, the CDI device
+    # mounts the libs but GLVND defaults to Mesa/llvmpipe (software render),
+    # which pins RViz + Gazebo sensor rendering to the CPU and caps RTF ~0.5.
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - __NV_PRIME_RENDER_OFFLOAD=1
+      - __GLX_VENDOR_LIBRARY_NAME=nvidia
+      - __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json

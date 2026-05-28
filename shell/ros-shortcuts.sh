@@ -2,159 +2,42 @@
 #   export ROS_SETUP_DIR="$HOME/gazebo-ros-setup"
 #   source "$ROS_SETUP_DIR/shell/ros-shortcuts.sh"
 #
-# All state lives in $ROS_SETUP_DIR/.env (the same file Docker Compose reads):
-#   ROS_DISTRO   humble | jazzy | ...                       (default: humble)
-#   ROS_PROFILE  base | nvidia                              (default: base)
-#
-# Change values with `ros-distro NAME` / `ros-profile NAME`. Run `ros-help` for
-# the full command list.
+# Config lives in $ROS_SETUP_DIR/.env (Docker Compose reads it directly):
+#   ROS_DISTRO    humble | jazzy | ...
+#   COMPOSE_FILE  overlay set — drop docker-compose.nvidia.yml if you have no GPU
 
 : "${ROS_SETUP_DIR:?set ROS_SETUP_DIR to the gazebo-ros-setup repo root before sourcing}"
 
-_ros_env_file="$ROS_SETUP_DIR/.env"
-_ros_service="core"
+# All commands are thin wrappers over this. --project-directory makes .env
+# (incl. COMPOSE_FILE) resolve from the repo root regardless of $PWD.
+dc() { docker compose --project-directory "$ROS_SETUP_DIR" "$@"; }
 
-# Read KEY from .env, or fall back to DEFAULT.
-_ros_get() {
-    local key="$1" default="$2" val=""
-    if [ -f "$_ros_env_file" ]; then
-        val="$(awk -F= -v k="$key" '$1 == k { sub(/^[^=]*=/, ""); print; exit }' "$_ros_env_file")"
-    fi
-    printf '%s' "${val:-$default}"
-}
+ros-build()   { dc build "$@"; }                       # rebuild the image
+ros-up()      { xhost +local:docker >/dev/null 2>&1; dc up "$@"; }       # start (foreground)
+ros-upd()     { xhost +local:docker >/dev/null 2>&1; dc up -d "$@"; }    # start (detached)
+ros-down()    { dc down "$@"; }                        # stop and remove
+ros-restart() { dc restart "${@:-core}"; }             # restart (default: core)
+ros-logs()    { dc logs "${@:--f}"; }                  # tail logs
+ros-ps()      { dc ps "$@"; }                          # status
 
-# Upsert KEY=VALUE in .env, preserving every other line.
-_ros_set() {
-    local key="$1" val="$2"
-    touch "$_ros_env_file"
-    local tmp; tmp="$(mktemp)"
-    awk -v k="$key" -v v="$val" '
-        BEGIN { FS = OFS = "="; found = 0 }
-        $1 == k { print k "=" v; found = 1; next }
-        { print }
-        END { if (!found) print k "=" v }
-    ' "$_ros_env_file" > "$tmp" && mv "$tmp" "$_ros_env_file"
-}
-
-_ros_compose_files() {
-    local profile files=("-f" "$ROS_SETUP_DIR/docker-compose.yml")
-    profile="$(_ros_get ROS_PROFILE base)"
-    case "$profile" in
-        base) ;;
-        nvidia)
-            files+=("-f" "$ROS_SETUP_DIR/docker-compose.nvidia.yml") ;;
-        *)
-            echo "ros-shortcuts: unknown ROS_PROFILE '$profile' in $_ros_env_file" >&2
-            echo "               expected: base | nvidia" >&2
-            return 1 ;;
-    esac
-    printf '%s\n' "${files[@]}"
-}
-
-_ros_compose() {
-    local files
-    files=($(_ros_compose_files)) || return 1
-    docker compose --project-directory "$ROS_SETUP_DIR" "${files[@]}" "$@"
-}
-
-ros-help() {
-    cat <<EOF
-gazebo-ros-setup shortcuts  (ROS_DISTRO=$(_ros_get ROS_DISTRO humble)  ROS_PROFILE=$(_ros_get ROS_PROFILE base))
-  ros-zsh [cmd...]         Exec zsh (or a command) inside the core container
-  ros-exec SVC [cmd...]    Exec zsh (or a command) inside any service container
-  ros-up [args]            Start stack in foreground
-  ros-upd [args]           Start stack detached (pass --profile NAME for consumers)
-  ros-down                 Stop and remove stack
-  ros-restart [svc]        Restart a service (default: core)
-  ros-logs [args]          Tail logs (default: -f)
-  ros-ps                   Show compose status
-  ros-build                Rebuild the image
-  ros-ws-build             Rebuild /core_ws inside the container and restart core
-  ros-run [cmd...]         One-off container via 'compose run --rm' (core)
-  ros-compose ...          Raw 'docker compose' with current profile/distro
-  ros-root                 cd into the gazebo-ros-setup repo
-  ros-profile NAME         Set profile (base|nvidia) in .env
-  ros-distro NAME          Set ROS_DISTRO (humble|jazzy|...) in .env
-  ros-help                 Show this help
-EOF
-}
-
-ros-compose()  { _ros_compose "$@"; }
-
-# Split off --profile flags so they land before the subcommand (where
-# `docker compose` expects them), and forward the rest to `up`.
-_ros_split_profiles() {
-    profiles=()
-    rest=()
-    while [ $# -gt 0 ]; do
-        case "$1" in
-            --profile)     profiles+=("--profile" "$2"); shift 2 ;;
-            --profile=*)   profiles+=("$1"); shift ;;
-            *)             rest+=("$1"); shift ;;
-        esac
-    done
-}
-
-ros-up() {
-    xhost +local:docker 2>/dev/null
-    local profiles rest
-    _ros_split_profiles "$@"
-    _ros_compose "${profiles[@]}" up "${rest[@]}"
-}
-ros-upd() {
-    xhost +local:docker 2>/dev/null
-    local profiles rest
-    _ros_split_profiles "$@"
-    _ros_compose "${profiles[@]}" up -d "${rest[@]}"
-}
-ros-down()     { _ros_compose down "$@"; }
-ros-restart()  { _ros_compose restart "${@:-$_ros_service}"; }
-ros-logs()     { _ros_compose logs "${@:--f}"; }
-ros-ps()       { _ros_compose ps "$@"; }
-ros-build()    { _ros_compose build "$@"; }
-ros-ws-build() {
-    _ros_compose exec "$_ros_service" /bin/zsh -ic "cd /core_ws && colcon build" \
-      && _ros_compose restart "$_ros_service"
-}
-ros-run()      { _ros_compose run --rm "$_ros_service" "$@"; }
-
-ros-zsh() {
-    if [ $# -eq 0 ]; then
-        _ros_compose exec "$_ros_service" /bin/zsh
-    else
-        _ros_compose exec "$_ros_service" /bin/zsh -ic "$*"
-    fi
-}
-
-# Exec into any named service: ros-exec consumer-template  or  ros-exec consumer-template ros2 topic list
+# Shell into a running container: `ros-zsh` for core, `ros-exec SVC [cmd...]`
+# for any service. Mostly for debugging — talk to the stack over host ROS.
+ros-zsh()  { ros-exec core "$@"; }
 ros-exec() {
-    local svc="${1:?usage: ros-exec SERVICE [cmd...]}"
-    shift
-    if [ $# -eq 0 ]; then
-        _ros_compose exec "$svc" /bin/zsh
-    else
-        _ros_compose exec "$svc" /bin/zsh -ic "$*"
-    fi
+    local svc="${1:?usage: ros-exec SERVICE [cmd...]}"; shift
+    if [ $# -eq 0 ]; then dc exec "$svc" /bin/zsh; else dc exec "$svc" /bin/zsh -ic "$*"; fi
+}
+
+# Rebuild the mounted /core_ws and restart core to pick it up.
+ros-ws-build() { dc exec core /bin/zsh -ic "cd /core_ws && colcon build" && dc restart core; }
+
+# One-off container as the host user, so files it writes to ./workspace stay
+# host-owned. Use for `ros2 pkg create`, ad-hoc colcon, anything that writes.
+# USER is forwarded because the host UID has no /etc/passwd entry in the image.
+ros-run() {
+    local svc=core
+    [ "$1" = "-s" ] && { svc="${2:?ros-run: -s requires a service name}"; shift 2; }
+    dc run --rm --user "$(id -u):$(id -g)" -e "USER=${USER:-$(id -un)}" "$svc" "$@"
 }
 
 ros-root() { cd "$ROS_SETUP_DIR" || return; }
-
-ros-profile() {
-    if [ $# -ne 1 ]; then
-        echo "current: ROS_PROFILE=$(_ros_get ROS_PROFILE base)"
-        echo "usage: ros-profile <base|nvidia>"
-        return 1
-    fi
-    _ros_set ROS_PROFILE "$1"
-    echo "ROS_PROFILE=$1  (saved to $_ros_env_file)"
-}
-
-ros-distro() {
-    if [ $# -ne 1 ]; then
-        echo "current: ROS_DISTRO=$(_ros_get ROS_DISTRO humble)"
-        echo "usage: ros-distro <humble|jazzy|...>"
-        return 1
-    fi
-    _ros_set ROS_DISTRO "$1"
-    echo "ROS_DISTRO=$1  (saved to $_ros_env_file)"
-}

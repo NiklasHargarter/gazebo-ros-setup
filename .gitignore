@@ -14,14 +14,10 @@ _site/
 .bundle/
 vendor/
 
-# Ignore colcon build artefacts but keep workspace/src tracked (with .gitkeep
-# plus first-party reference packages that ship with the repo)
-workspace/build/
-workspace/install/
-workspace/log/
-workspace/src/*
-!workspace/src/.gitkeep
-!workspace/src/consumer_template/
+# colcon build artefacts from example consumers; keep their src tracked
+examples/**/build/
+examples/**/install/
+examples/**/log/
 
 # Python bytecode
 __pycache__/
@@ -40,3 +36,4 @@ core_ws/src/*
 # Local work plans / scratch notes, not for upstream
 tickets/
 ignition_pictures/
+presentation/

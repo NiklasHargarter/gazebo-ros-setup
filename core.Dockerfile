@@ -16,6 +16,7 @@ RUN apt-get update && apt-get install -y \
     ros-${ROS_DISTRO}-ros2-controllers \
     ros-${ROS_DISTRO}-joint-state-publisher \
     ros-${ROS_DISTRO}-joint-state-publisher-gui \
+    ros-${ROS_DISTRO}-rqt-joint-trajectory-controller \
     ros-${ROS_DISTRO}-gz-ros2-control \
     && rm -rf /var/lib/apt/lists/*
 

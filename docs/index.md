@@ -6,39 +6,41 @@ nav_order: 1
 
 # Getting Started with ROS 2 & Gazebo
 
-A reproducible, container-based ROS 2 + Gazebo dev environment for projects where the core stack lives in a private repo. You don't install ROS or Gazebo on your host — everything runs inside Docker.
-
-**Current distro:** ROS 2 Humble + Gazebo Fortress (Ignition).
+This repo runs the robot and Gazebo sim (ROS 2 Humble + Fortress) in Docker —
+no ROS on your host. That's its whole job. Your code talks to it over ROS on
+the host network, however you want to run that code.
 
 ---
 
-## How the repo is organised
+## How it works
 
-Two Docker image layers, both built locally on every machine (nothing with private code is ever published):
+The core image is built locally on every machine (the private source is never
+published):
 
 ```
 osrf/ros:humble-desktop-full         ← upstream, pulled once and cached
   └── project-core  (core.Dockerfile)
         ← core apt deps + entrypoint that auto-sources the workspace
-        └── your consumer  (your own Dockerfile, FROM project-core)
-              ← your deps (AI/CV libraries, custom apt packages, ...)
 ```
 
-The core workspace source lives on the host under `core_ws/` and is bind-mounted at runtime — build artifacts are visible outside the container. Consumers inherit the entrypoint from `project-core` and only need to add their own dependencies.
-
-Core and consumers run as **separate containers** in one compose stack. They communicate over ROS topics/services/actions via host network (DDS discovery handles the rest):
+The core workspace source lives on the host under `core_ws/` and is
+bind-mounted at runtime — build artifacts stay visible outside the container.
 
 ```bash
-docker compose up -d                        # core only
-docker compose --profile camera up -d       # core + consumer-camera
+ros-upd            # start the robot + sim
 ```
 
-An optional compose overlay adds GPU support without touching the base file:
+The NVIDIA overlay is enabled by default via `COMPOSE_FILE` in `.env`; drop
+`docker-compose.nvidia.yml` from that line if you have no GPU.
 
-```bash
-docker compose up                                                          # CPU / Mesa
-docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up      # NVIDIA GPU
-```
+## Talking to it
+
+Anything that speaks ROS on the **host network** can drive the robot. Run your
+nodes in a container with host networking (and `ipc: host` for shared-memory
+transport) from anywhere on your machine, or run them natively — your choice.
+How your code gets built or containerised is up to you. The
+[`examples/`](https://github.com/NiklasHargarter/gazebo-ros-setup/tree/main/examples)
+are reference, not a required pattern.
 
 ---
 
@@ -46,17 +48,7 @@ docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up      # NVID
 
 | Goal | Start here |
 |---|---|
-| Set up this project on a new machine | [Quickstart](quickstart) |
-| Understand the core / consumer image layers | [Architecture](architecture) |
-| Build or rebuild the core image | [Core Stack](core-stack) |
-| Add consumer packages | [Writing Your Own Nodes](writing-your-own-nodes) |
-| See what's inside the `desktop-full` base image | [Desktop Full Contents](desktop-full-contents) |
-| Tour every file in the repo | [Repo Tour](repo-tour) |
-
----
-
-## Quick reference
-
-| Distro | Gazebo | Launch | Topic CLI |
-|---|---|---|---|
-| Humble | Fortress | `ign gazebo` | `ign topic` |
+| Get the robot + sim running on a new machine | [Quickstart](quickstart) |
+| Understand the setup and how teams connect | [Architecture](architecture) |
+| See what the running sim exposes | [Topics](topics) |
+| A reference consumer | [`examples/perception-demo`](https://github.com/NiklasHargarter/gazebo-ros-setup/tree/main/examples/perception-demo) |

@@ -8,7 +8,7 @@ nav_order: 2
 
 **Requires:** Ubuntu 22.04+ · Docker · optional NVIDIA GPU.
 
-This repo provides the dev-container infrastructure. You bring the core source (private repo) and your own consumer code. Both images are built locally on each machine — nothing with private source is ever published.
+This repo gets the robot + Gazebo sim running. You bring the core source (private repo); the core image is built locally on each machine, so nothing private is ever published. Your own code connects over ROS afterwards — that's up to you.
 
 ---
 
@@ -31,49 +31,50 @@ After the "Docker non-root" step, **log out and back in** (or reboot). `newgrp d
 ```bash
 git clone https://github.com/NiklasHargarter/gazebo-ros-setup.git
 cd gazebo-ros-setup
+bin/install.sh
 ```
 
-Add to your `~/.zshrc` (or `~/.bashrc`):
+`bin/install.sh` shows the two lines it wants to add to your `~/.zshrc` (or
+`~/.bashrc`), asks before appending, sets up `.env` (step 4), offers to clone
+the core source (step 3), then drops you into a fresh shell with the shortcuts
+loaded. It works for bash and zsh and edits nothing without a `y`.
+
+Prefer to do it by hand? Run `bin/install.sh --print` to see the lines, add them
+to your rc file, then reload (`source ~/.zshrc`):
 
 ```bash
 export ROS_SETUP_DIR="$HOME/gazebo-ros-setup"
 source "$ROS_SETUP_DIR/shell/ros-shortcuts.sh"
 ```
 
-Reload your shell:
-
-```bash
-source ~/.zshrc
-```
-
-Run `ros-help` to see all available commands.
-
 ---
 
 ## 3. Clone the core source
 
+`bin/install.sh` offers this; to do it directly:
+
 ```bash
-git clone --branch 0.0.3 https://github.com/ROBOTIS-GIT/robotis_hand.git core_ws/src/robotis_hand
-git clone https://github.com/ROBOTIS-GIT/turtlebot3_manipulation.git core_ws/src/turtlebot3_manipulation
-git clone https://gitlab.sdu.dk/hugo/hugo_moveit_config.git core_ws/src/hugo_moveit_config
-git -C core_ws/src/hugo_moveit_config checkout 3eb7c8d5c756bfa08947a4466f68e6737e1d368d
+bin/setup-core-ws.sh
 ```
 
-`core_ws/src/*` is gitignored. `robotis_hand` must be pinned to `0.0.3` — newer versions have a broken dependency chain.
+This clones `robotis_hand` (pinned to `0.0.3` — newer versions have a broken
+dependency chain), `turtlebot3_manipulation`, and `hugo_moveit_config` (pinned
+SHA) into `core_ws/src/`. `core_ws/src/*` is gitignored — every machine clones
+its own copy.
 
 ---
 
 ## 4. Configure `.env`
 
+`bin/install.sh` already created `.env` and set the overlay from the GPU
+question. To do it by hand instead:
+
 ```bash
 cp .env.example .env
 ```
 
-The default only needs `ROS_DISTRO`:
-
-```env
-ROS_DISTRO=humble
-```
+Two keys: `ROS_DISTRO` (default `humble`) and `COMPOSE_FILE`. Drop
+`docker-compose.nvidia.yml` from `COMPOSE_FILE` if you have no GPU.
 
 ---
 
@@ -93,12 +94,9 @@ This installs apt dependencies and sets up the entrypoint. Only rerun when apt d
 ros-upd
 ```
 
-X11 passthrough is granted automatically. For NVIDIA GPU:
-
-```bash
-ros-profile nvidia
-ros-upd
-```
+X11 passthrough is granted automatically. The NVIDIA overlay is on by default
+(via `COMPOSE_FILE` in `.env`) — drop `docker-compose.nvidia.yml` from that line
+if you have no GPU.
 
 ---
 
@@ -157,13 +155,13 @@ ros-down
 | `ros-build` | Rebuild the core image |
 | `ros-restart` | Restart the core container |
 | `ros-down` | Stop and remove the stack |
-| `ros-help` | Full command reference |
+| `ros-logs` / `ros-ps` | Tail logs / show status |
+| `ros-ws-build` | Rebuild core_ws, then restart core |
 
 ---
 
 ## Next steps
 
-- [Architecture](architecture) — full picture of the core / consumer image layers
-- [Repo Tour](repo-tour) — one paragraph per file, what each is for
-- [Core Stack](core-stack) — building and iterating on the core workspace
-- [Writing Your Own Nodes](writing-your-own-nodes) — adding consumer packages
+- [Architecture](architecture) — core / consumer image layers and how teams plug in
+- [Topics](topics) — what the running sim exposes
+- [`examples/perception-demo`](https://github.com/NiklasHargarter/gazebo-ros-setup/tree/main/examples/perception-demo) — a working two-node consumer as its own compose stack

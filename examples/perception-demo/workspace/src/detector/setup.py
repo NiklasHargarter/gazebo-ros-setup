@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'consumer_template'
+package_name = 'detector'
 
 setup(
     name=package_name,
@@ -13,10 +13,10 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Niklas Hargarter',
-    maintainer_email='niklashargarter@gmail.com',
-    description='Minimal consumer-side examples: subscribe to camera, drive the base.',
-    license='MIT',
+    maintainer='root',
+    maintainer_email='root@todo.todo',
+    description='TODO: Package description',
+    license='TODO: License declaration',
     extras_require={
         'test': [
             'pytest',
@@ -24,8 +24,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'echo_camera = consumer_template.echo_camera:main',
-            'drive_square = consumer_template.drive_square:main',
+            'detector_node = detector.detector_node:main'
         ],
     },
 )

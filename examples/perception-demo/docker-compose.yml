@@ -1,0 +1,25 @@
+services:
+  detector:
+    image: perception-demo:${ROS_DISTRO:-humble}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-humble}
+    container_name: perception-detector
+    command: ["bash", "-c", "source /workspace/install/setup.bash && ros2 run detector detector_node"]
+    volumes:
+      - ./workspace:/workspace
+    network_mode: host
+    ipc: host
+    devices:
+      - nvidia.com/gpu=all
+
+  head_tracker:
+    image: perception-demo:${ROS_DISTRO:-humble}
+    container_name: perception-head-tracker
+    command: ["bash", "-c", "source /workspace/install/setup.bash && ros2 run head_tracker head_tracker_node"]
+    volumes:
+      - ./workspace:/workspace
+    network_mode: host
+    ipc: host
